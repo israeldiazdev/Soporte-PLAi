@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard de Tickets</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+      min-height: 100vh;
+      color: #e0e0e0;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      width: 200%;
+      height: 200%;
+      top: -50%;
+      left: -50%;
+      background:
+        radial-gradient(circle at 20% 50%, rgba(0, 150, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(138, 43, 226, 0.1) 0%, transparent 50%);
+      animation: rotate 20s linear infinite;
+      z-index: 0;
+    }
+
+    @keyframes rotate { 100% { transform: rotate(360deg); } }
+
+    header {
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-size: 2em;
+      background: linear-gradient(135deg, #00d4ff 0%, #7b2ff7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h1::before { content: '📊'; font-size: 0.9em; }
+
+    .filters-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .filters-title {
+      font-size: 1.2em;
+      color: #64ffda;
+      font-weight: 600;
+    }
+
+    .toggle-filters {
+      padding: 10px 16px;
+      background: rgba(100, 255, 218, 0.1);
+      border: 1px solid rgba(100, 255, 218, 0.3);
+      border-radius: 8px;
+      color: #64ffda;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toggle-filters:hover {
+      background: rgba(100, 255, 218, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .toggle-icon {
+      transition: transform 0.3s ease;
+      font-size: 1.2em;
+    }
+
+    .toggle-icon.open {
+      transform: rotate(180deg);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: all 0.4s ease;
+    }
+
+    .controls.show {
+      max-height: 1000px;
+      opacity: 1;
+      margin-top: 15px;
+    }
+
+    .controls > div { min-width: 0; }
+
+    label {
+      display: block;
+      font-size: 0.85em;
+      color: #64ffda;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(100, 255, 218, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      font-size: 0.95em;
+      color: #e0e0e0;
+      transition: all 0.3s ease;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #64ffda;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 20px rgba(100, 255, 218, 0.2);
+    }
+
+    input::placeholder { color: #8892b0; }
+
+    select { cursor: pointer; }
+    select option { background: #1a1f3a; color: #e0e0e0; }
+
+    button {
+      padding: 12px 16px;
+      border: 1px solid rgba(100, 255, 218, 0.3);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #e0e0e0;
+      transition: all 0.3s ease;
+      font-size: 0.95em;
+    }
+
+    button:hover {
+      background: rgba(100, 255, 218, 0.1);
+      border-color: #64ffda;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(100, 255, 218, 0.2);
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #00d4ff 0%, #7b2ff7 100%);
+      color: white;
+      border: none;
+    }
+
+    button.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    main {
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.3s ease;
+      animation: slideUp 0.6s ease-out;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 212, 255, 0.2);
+      border-color: rgba(100, 255, 218, 0.3);
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card .k {
+      font-size: 0.85em;
+      color: #8892b0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card .v {
+      font-size: 2em;
+      font-weight: 800;
+      margin-top: 8px;
+      background: linear-gradient(135deg, #00d4ff 0%, #7b2ff7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .tableWrap {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th, td {
+      padding: 16px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.9em;
+      vertical-align: middle;
+      text-align: left;
+      word-wrap: break-word;
+    }
+
+    th {
+      font-size: 0.85em;
+      color: #64ffda;
+      background: rgba(0, 0, 0, 0.2);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    td { line-height: 1.6; }
+    td strong { display: block; margin-bottom: 4px; }
+
+    tr:hover td { background: rgba(100, 255, 218, 0.05); }
+
+    .muted { color: #8892b0; font-size: 0.85em; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8em;
+      border: 1px solid;
+    }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+    .p-alta { background: rgba(255, 71, 87, 0.15); border-color: rgba(255, 71, 87, 0.4); color: #ff4757; }
+    .p-alta .dot { background: #ff4757; }
+
+    .p-media { background: rgba(255, 165, 2, 0.15); border-color: rgba(255, 165, 2, 0.4); color: #ffa502; }
+    .p-media .dot { background: #ffa502; }
+
+    .p-baja { background: rgba(46, 213, 115, 0.15); border-color: rgba(46, 213, 115, 0.4); color: #2ed573; }
+    .p-baja .dot { background: #2ed573; }
+
+    .status { font-weight: 700; color: #64ffda; }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pager { display: flex; gap: 10px; align-items: center; }
+
+    .error {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: rgba(255, 71, 87, 0.1);
+      border-left: 4px solid #ff4757;
+      border-radius: 6px;
+      color: #ff4757;
+      font-weight: 700;
+    }
+
+    .ok {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: rgba(46, 213, 115, 0.1);
+      border-left: 4px solid #2ed573;
+      border-radius: 6px;
+      color: #2ed573;
+      font-weight: 700;
+    }
+
+    .small { font-size: 0.8em; color: #8892b0; margin-top: 4px; }
+
+    .btn-group { display: flex; gap: 8px; }
+
+    @media (max-width: 1050px) {
+      .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 560px) {
+      h1 { font-size: 1.5em; }
+      .cards { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr; }
+      .footer { flex-direction: column; align-items: stretch; }
+      table { font-size: 0.85em; }
+      th, td { padding: 12px 8px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Dashboard de Tickets</h1>
+
+    <div class="filters-header">
+      <div class="filters-title">🔍 Filtros</div>
+      <button class="toggle-filters" id="toggleFilters">
+        <span>Mostrar filtros</span>
+        <span class="toggle-icon">▼</span>
+      </button>
+    </div>
+
+    <div class="controls" id="filtersPanel">
+      <div>
+        <label>Buscar (ID / nombre / email / mensaje)</label>
+        <input id="search" placeholder="Ej. correo, TICKET-2026..." />
+      </div>
+
+      <div>
+        <label>Prioridad</label>
+        <select id="prioridad">
+          <option value="">Todas</option>
+          <option value="alta">Alta</option>
+          <option value="media">Media</option>
+          <option value="baja">Baja</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Estatus</label>
+        <input id="estatus" placeholder="Ej. en revisión, abierto..." />
+      </div>
+
+      <div>
+        <label>Categoría</label>
+        <input id="categoria" placeholder="Ej. Técnico, Facturación..." />
+      </div>
+
+      <div>
+        <label>Orden</label>
+        <select id="order">
+          <option value="desc">Más recientes</option>
+          <option value="asc">Más antiguos</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Límite por página</label>
+        <select id="limit">
+          <option value="20">20</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Auto-actualizar</label>
+        <select id="auto">
+          <option value="0">No</option>
+          <option value="10">Cada 10s</option>
+          <option value="20">Cada 20s</option>
+          <option value="60">Cada 60s</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Token (se envía por query ?token=...)</label>
+        <input id="token" placeholder="Si tu API requiere token, pégalo aquí" />
+        <div class="small">Tip: se guarda en el navegador (localStorage).</div>
+      </div>
+
+      <div>
+        <label>Acciones</label>
+        <div class="btn-group">
+          <button class="primary" id="refreshBtn">Actualizar</button>
+          <button id="clearBtn">Limpiar</button>
+        </div>
+      </div>
+
+      <div>
+        <label>Endpoint</label>
+        <div class="small" id="endpointText"></div>
+      </div>
+    </div>
+
+    <div id="msg" class="muted"></div>
+    <div id="err" class="error" style="display:none;"></div>
+    <div id="ok" class="ok" style="display:none;"></div>
+  </header>
+
+  <main>
+    <section class="cards">
+      <div class="card">
+        <div class="k">Tickets (página actual)</div>
+        <div class="v" id="kCount">—</div>
+      </div>
+      <div class="card">
+        <div class="k">Alta</div>
+        <div class="v" id="kAlta">—</div>
+      </div>
+      <div class="card">
+        <div class="k">Media</div>
+        <div class="v" id="kMedia">—</div>
+      </div>
+      <div class="card">
+        <div class="k">Baja</div>
+        <div class="v" id="kBaja">—</div>
+      </div>
+    </section>
+
+    <section class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width: 140px;">Ticket</th>
+            <th style="min-width: 140px;">Fecha</th>
+            <th style="min-width: 100px;">Prioridad</th>
+            <th style="min-width: 120px;">Categoría</th>
+            <th style="min-width: 120px;">Estatus</th>
+            <th style="min-width: 180px;">Nombre / Email</th>
+            <th style="min-width: 200px;">Respuesta IA</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="7" class="muted">Cargando…</td></tr>
+        </tbody>
+      </table>
+
+      <div class="footer">
+        <div class="muted" id="rangeText">—</div>
+
+        <div class="pager">
+          <button id="prevBtn">◀</button>
+          <div class="muted">Offset: <span id="offsetText">0</span></div>
+          <button id="nextBtn">▶</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ===========================
+    // CONFIG (PRODUCCIÓN)
+    // ===========================
+    const API_BASE = "https://n8n.plai.mx/webhook";
+    const API_PATH = "/dashboard/tickets";
+    const ENDPOINT = API_BASE + API_PATH;
+
+    // ===========================
+    // STATE
+    // ===========================
+    let offset = 0;
+    let autoTimer = null;
+
+    const els = {
+      endpointText: document.getElementById("endpointText"),
+      msg: document.getElementById("msg"),
+      err: document.getElementById("err"),
+      ok: document.getElementById("ok"),
+      tbody: document.getElementById("tbody"),
+      search: document.getElementById("search"),
+      prioridad: document.getElementById("prioridad"),
+      estatus: document.getElementById("estatus"),
+      categoria: document.getElementById("categoria"),
+      order: document.getElementById("order"),
+      limit: document.getElementById("limit"),
+      token: document.getElementById("token"),
+      auto: document.getElementById("auto"),
+      refreshBtn: document.getElementById("refreshBtn"),
+      clearBtn: document.getElementById("clearBtn"),
+      prevBtn: document.getElementById("prevBtn"),
+      nextBtn: document.getElementById("nextBtn"),
+      offsetText: document.getElementById("offsetText"),
+      rangeText: document.getElementById("rangeText"),
+      kCount: document.getElementById("kCount"),
+      kAlta: document.getElementById("kAlta"),
+      kMedia: document.getElementById("kMedia"),
+      kBaja: document.getElementById("kBaja"),
+    };
+
+    els.endpointText.textContent = ENDPOINT;
+
+    // ===========================
+    // Helpers
+    // ===========================
+    function showError(text) {
+      els.err.style.display = "block";
+      els.err.textContent = text;
+      els.ok.style.display = "none";
+    }
+    function showOk(text) {
+      els.ok.style.display = "block";
+      els.ok.textContent = text;
+      els.err.style.display = "none";
+    }
+    function clearMessages() {
+      els.err.style.display = "none";
+      els.ok.style.display = "none";
+      els.err.textContent = "";
+      els.ok.textContent = "";
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/[&<>"']/g, m => {
+        return ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" })[m];
+      });
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return "";
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString("es-MX", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+      } catch { return String(iso); }
+    }
+
+    function pillPrioridad(p) {
+      const val = String(p || "").toLowerCase();
+      const cls = val === "alta" ? "p-alta" : val === "baja" ? "p-baja" : "p-media";
+      const label = val === "alta" ? "Alta" : val === "baja" ? "Baja" : "Media";
+      return `<span class="pill ${cls}"><span class="dot"></span>${label}</span>`;
+    }
+
+    function saveToken() {
+      const t = els.token.value.trim();
+      if (t) localStorage.setItem("dashboard_token", t);
+      else localStorage.removeItem("dashboard_token");
+    }
+
+    function loadToken() {
+      const t = localStorage.getItem("dashboard_token") || "";
+      els.token.value = t;
+    }
+
+    function buildQuery() {
+      const q = new URLSearchParams();
+
+      const search = els.search.value.trim();
+      const prioridad = els.prioridad.value.trim();
+      const estatus = els.estatus.value.trim();
+      const categoria = els.categoria.value.trim();
+      const order = els.order.value.trim();
+      const limit = els.limit.value.trim();
+      const token = els.token.value.trim();
+
+      if (search) q.set("search", search);
+      if (prioridad) q.set("prioridad", prioridad);
+      if (estatus) q.set("estatus", estatus);
+      if (categoria) q.set("categoria", categoria);
+      if (order) q.set("order", order);
+
+      q.set("limit", limit);
+      q.set("offset", String(offset));
+
+      // ✅ token por query (evita headers custom / CORS raro desde file://)
+      if (token) q.set("token", token);
+
+      return q.toString();
+    }
+
+    // ===========================
+    // Fetch + Render
+    // ===========================
+    async function loadTickets() {
+      clearMessages();
+      els.refreshBtn.disabled = true;
+      els.msg.textContent = "Cargando tickets…";
+      els.offsetText.textContent = String(offset);
+
+      saveToken();
+
+      const url = ENDPOINT + "?" + buildQuery();
+
+      try {
+        const res = await fetch(url, { method: "GET" });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          const msg = data?.error || data?.message || ("HTTP " + res.status);
+          throw new Error(msg);
+        }
+
+        if (!data || data.ok !== true) {
+          throw new Error("Respuesta inesperada del API.");
+        }
+
+        const tickets = Array.isArray(data.tickets) ? data.tickets : [];
+
+        // KPIs (solo de la página actual)
+        const alta = tickets.filter(t => (t.prioridad || "").toLowerCase() === "alta").length;
+        const media = tickets.filter(t => (t.prioridad || "").toLowerCase() === "media").length;
+        const baja = tickets.filter(t => (t.prioridad || "").toLowerCase() === "baja").length;
+
+        els.kCount.textContent = String(tickets.length);
+        els.kAlta.textContent = String(alta);
+        els.kMedia.textContent = String(media);
+        els.kBaja.textContent = String(baja);
+
+        // Tabla
+        if (tickets.length === 0) {
+          els.tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay resultados con esos filtros.</td></tr>`;
+        } else {
+          els.tbody.innerHTML = tickets.map(t => {
+            const id = escapeHtml(t.ticket_id || "");
+            const fecha = escapeHtml(fmtDate(t.fecha_creacion || t.fecha_actualizacion));
+            const prioridad = pillPrioridad(t.prioridad);
+            const categoria = escapeHtml(t.categoria || "");
+            const estatus = escapeHtml(t.estatus || "");
+            const nombre = escapeHtml(t.nombre || "");
+            const email = escapeHtml(t.email || "");
+            const resp = escapeHtml(t.respuesta_usuario || "");
+
+            return `
+              <tr>
+                <td><strong style="color: #00d4ff;">${id}</strong></td>
+                <td>${fecha}</td>
+                <td>${prioridad}</td>
+                <td>${categoria}</td>
+                <td class="status">${estatus}</td>
+                <td>
+                  <div><strong>${nombre}</strong></div>
+                  <div class="muted">${email}</div>
+                </td>
+                <td>${resp || '<span class="muted">—</span>'}</td>
+              </tr>
+            `;
+          }).join("");
+        }
+
+        const lim = parseInt(els.limit.value, 10) || 50;
+        const from = offset + 1;
+        const to = offset + tickets.length;
+        els.rangeText.textContent = tickets.length ? `Mostrando ${from}–${to} (límite ${lim})` : `Mostrando 0 resultados`;
+
+        // paginación simple
+        els.prevBtn.disabled = offset === 0;
+        els.nextBtn.disabled = tickets.length < lim;
+
+        showOk("✅ Actualizado correctamente");
+      } catch (err) {
+        showError("❌ Error: " + (err?.message || String(err)));
+        els.tbody.innerHTML = `<tr><td colspan="7" class="muted">No se pudieron cargar tickets.</td></tr>`;
+        els.rangeText.textContent = "—";
+      } finally {
+        els.refreshBtn.disabled = false;
+        els.msg.textContent = "";
+      }
+    }
+
+    // ===========================
+    // Events
+    // ===========================
+    els.refreshBtn.addEventListener("click", () => loadTickets());
+
+    els.clearBtn.addEventListener("click", () => {
+      els.search.value = "";
+      els.prioridad.value = "";
+      els.estatus.value = "";
+      els.categoria.value = "";
+      els.order.value = "desc";
+      offset = 0;
+      loadTickets();
+    });
+
+    // Buscar con Enter
+    els.search.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { offset = 0; loadTickets(); }
+    });
+
+    // Cambios en filtros -> reset offset y carga
+    ["prioridad","order","limit"].forEach(id => {
+      document.getElementById(id).addEventListener("change", () => { offset = 0; loadTickets(); });
+    });
+
+    // token -> guardar
+    els.token.addEventListener("change", () => saveToken());
+
+    // paginación
+    els.prevBtn.addEventListener("click", () => {
+      const lim = parseInt(els.limit.value, 10) || 50;
+      offset = Math.max(offset - lim, 0);
+      loadTickets();
+    });
+    els.nextBtn.addEventListener("click", () => {
+      const lim = parseInt(els.limit.value, 10) || 50;
+      offset = offset + lim;
+      loadTickets();
+    });
+
+    // auto refresh
+    els.auto.addEventListener("change", () => {
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+      const secs = parseInt(els.auto.value, 10) || 0;
+      if (secs > 0) {
+        autoTimer = setInterval(() => loadTickets(), secs * 1000);
+      }
+    });
+
+    // Toggle filtros
+    const toggleBtn = document.getElementById("toggleFilters");
+    const filtersPanel = document.getElementById("filtersPanel");
+    const toggleIcon = toggleBtn.querySelector(".toggle-icon");
+    const toggleText = toggleBtn.querySelector("span:first-child");
+
+    toggleBtn.addEventListener("click", () => {
+      filtersPanel.classList.toggle("show");
+      toggleIcon.classList.toggle("open");
+      toggleText.textContent = filtersPanel.classList.contains("show") ? "Ocultar filtros" : "Mostrar filtros";
+    });
+
+    // ===========================
+    // Init
+    // ===========================
+    loadToken();
+    loadTickets();
+  </script>
+</body>
+</html>
