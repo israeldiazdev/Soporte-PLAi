@@ -353,6 +353,7 @@
     // URLs
     const WEBHOOK_URL = 'https://n8n.plai.mx/webhook/soporte-plai-prod';
     const DIRECTUS_URL = 'https://admin.plai.mx/items/Empleados';
+    const DIRECTUS_TOKEN = ''; // ← Agregar tu Bearer token aquí
 
     // Estado
     let empleadoVerificado = false;
@@ -472,15 +473,20 @@
         url.searchParams.set('limit', '1');
         url.searchParams.set('filter[correo][_eq]', email);
 
+        const headers = { 'Accept': 'application/json' };
+        
+        // ✅ Agregar Bearer token si está configurado
+        if (DIRECTUS_TOKEN) {
+          headers['Authorization'] = `Bearer ${DIRECTUS_TOKEN}`;
+        }
+
         const response = await fetch(url.toString(), {
           method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-          },
-          // ✅ si tu Directus requiere sesión/cookies:
-          //credentials: 'include',
-          // mode: 'cors' // default
+          headers: headers,
+          // credentials: 'include', // ❌ quitar
+          mode: 'cors'
         });
+
 
         // Manejo fino de errores HTTP
         if (response.status === 401 || response.status === 403) {
