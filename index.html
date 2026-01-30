@@ -286,15 +286,9 @@
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Nombre</label>
-              <input type="text" id="nombre" name="nombre" placeholder="Ingresa tu nombre" required />
-            </div>
-            <div class="form-group">
-              <label>Apellido</label>
-              <input type="text" id="apellido" name="apellido" placeholder="Ingresa tu apellido" required />
-            </div>
+          <div class="form-group">
+            <label>Nombre Completo</label>
+            <input type="text" id="nombre-completo" name="nombre-completo" placeholder="Ingresa tu nombre completo" required />
           </div>
 
           <div class="form-row">
@@ -391,14 +385,13 @@
     }
 
     function resetAutoFields() {
-      document.getElementById('nombre').value = '';
-      document.getElementById('apellido').value = '';
+      document.getElementById('nombre-completo').value = '';
       document.getElementById('puesto').value = '';
       document.getElementById('area').value = '';
     }
 
     function lockAutoFields(lock) {
-      ['nombre','apellido','puesto','area'].forEach(id => {
+      ['nombre-completo','puesto','area'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.disabled = !!lock;
@@ -423,7 +416,7 @@
 
       emailInput.value = '';
       hideMessage();
-      showMessage('ℹ️ Ingresa tu correo corporativo y presiona "Verificar correo".', 'info');
+      showMessage('ℹ️ Ingresa tu correo y presiona "Verificar correo".', 'info');
     }
 
     function setModeNoPlantilla() {
@@ -515,8 +508,7 @@
         formFields.style.display = 'block';
         emailFieldNoPlantilla.style.display = 'none';
 
-        document.getElementById('nombre').value = nombre;
-        document.getElementById('apellido').value = apellido;
+        document.getElementById('nombre-completo').value = nombreCompleto;
         document.getElementById('puesto').value = empleado.posicion || '';
         document.getElementById('area').value = empleado.direccion_adscrita?.nombre_de_direccion || '';
 
@@ -599,8 +591,7 @@
       }
 
       const data = {
-        nombre: document.getElementById('nombre').value,
-        apellido: document.getElementById('apellido').value,
+        nombre: document.getElementById('nombre-completo').value,
         email: correoFinal,
         area: document.getElementById('area').value,
         puesto: document.getElementById('puesto').value,
