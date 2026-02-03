@@ -484,7 +484,7 @@
             <th style="min-width: 120px;">Categoría</th>
             <th style="min-width: 120px;">Estatus</th>
             <th style="min-width: 180px;">Nombre / Email</th>
-            <th style="min-width: 200px;">Respuesta IA</th>
+            <th style="min-width: 200px;">Mensaje del usuario</th>
           </tr>
         </thead>
         <tbody id="tbody">
@@ -674,7 +674,7 @@
             const estatus = escapeHtml(t.estatus || "");
             const nombre = escapeHtml(t.nombre || "");
             const email = escapeHtml(t.email || "");
-            const resp = escapeHtml(t.respuesta_usuario || "");
+            const resp = escapeHtml(t.mensaje|| "");
 
             return `
               <tr>
