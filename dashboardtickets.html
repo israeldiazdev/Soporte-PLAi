@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="es">
 <head>
@@ -244,16 +245,15 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    
-      /* 🔥 IMPORTANTE */
-      overflow-x: auto;   /* Scroll horizontal */
+
+      overflow-x: auto;
       overflow-y: hidden;
       width: 100%;
     }
 
     table {
       width: 100%;
-      min-width: 900px;   /* fuerza scroll cuando la pantalla es pequeña */
+      min-width: 1050px; /* un poco más por la nueva columna */
       border-collapse: collapse;
     }
 
@@ -309,6 +309,22 @@
     .p-baja .dot { background: #2ed573; }
 
     .status { font-weight: 700; color: #64ffda; }
+
+    .flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8em;
+      border: 1px solid rgba(255, 203, 71, 0.5);
+      background: rgba(255, 203, 71, 0.12);
+      color: #ffcb47;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+    .flag .dot { background: #ffcb47; }
 
     .footer {
       display: flex;
@@ -401,6 +417,18 @@
         <input id="categoria" placeholder="Ej. Técnico, Facturación..." />
       </div>
 
+      <!-- ✅ NUEVO: Área de soporte -->
+      <div>
+        <label>Área de soporte</label>
+        <select id="area">
+          <option value="">Todas</option>
+          <option value="plataformas">Plataformas</option>
+          <option value="arquitectura">Arquitectura</option>
+          <option value="infraestructura">Infraestructura</option>
+          <option value="sin_clasificar">Sin clasificar</option>
+        </select>
+      </div>
+
       <div>
         <label>Orden</label>
         <select id="order">
@@ -482,13 +510,14 @@
             <th style="min-width: 140px;">Fecha</th>
             <th style="min-width: 100px;">Prioridad</th>
             <th style="min-width: 120px;">Categoría</th>
+            <th style="min-width: 160px;">Área</th>
             <th style="min-width: 120px;">Estatus</th>
             <th style="min-width: 180px;">Nombre / Email</th>
-            <th style="min-width: 200px;">Mensaje del usuario</th>
+            <th style="min-width: 260px;">Mensaje del usuario</th>
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="7" class="muted">Cargando…</td></tr>
+          <tr><td colspan="8" class="muted">Cargando…</td></tr>
         </tbody>
       </table>
 
@@ -528,6 +557,7 @@
       prioridad: document.getElementById("prioridad"),
       estatus: document.getElementById("estatus"),
       categoria: document.getElementById("categoria"),
+      area: document.getElementById("area"), // ✅ NUEVO
       order: document.getElementById("order"),
       limit: document.getElementById("limit"),
       token: document.getElementById("token"),
@@ -587,6 +617,19 @@
       return `<span class="pill ${cls}"><span class="dot"></span>${label}</span>`;
     }
 
+    function pillArea(area, requiereRevision) {
+      const a = String(area || "").toLowerCase();
+      const label =
+        a === "plataformas" ? "Plataformas" :
+        a === "arquitectura" ? "Arquitectura" :
+        a === "infraestructura" ? "Infraestructura" :
+        a === "sin_clasificar" ? "Sin clasificar" :
+        (area || "—");
+
+      const rev = requiereRevision ? `<span class="flag"><span class="dot"></span>Revisión</span>` : "";
+      return `<span>${escapeHtml(label)}</span>${rev}`;
+    }
+
     function saveToken() {
       const t = els.token.value.trim();
       if (t) localStorage.setItem("dashboard_token", t);
@@ -605,6 +648,7 @@
       const prioridad = els.prioridad.value.trim();
       const estatus = els.estatus.value.trim();
       const categoria = els.categoria.value.trim();
+      const area = els.area.value.trim(); // ✅ NUEVO
       const order = els.order.value.trim();
       const limit = els.limit.value.trim();
       const token = els.token.value.trim();
@@ -613,6 +657,7 @@
       if (prioridad) q.set("prioridad", prioridad);
       if (estatus) q.set("estatus", estatus);
       if (categoria) q.set("categoria", categoria);
+      if (area) q.set("area", area); // ✅ NUEVO
       if (order) q.set("order", order);
 
       q.set("limit", limit);
@@ -664,17 +709,18 @@
 
         // Tabla
         if (tickets.length === 0) {
-          els.tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay resultados con esos filtros.</td></tr>`;
+          els.tbody.innerHTML = `<tr><td colspan="8" class="muted">No hay resultados con esos filtros.</td></tr>`;
         } else {
           els.tbody.innerHTML = tickets.map(t => {
             const id = escapeHtml(t.ticket_id || "");
             const fecha = escapeHtml(fmtDate(t.fecha_creacion || t.fecha_actualizacion));
             const prioridad = pillPrioridad(t.prioridad);
             const categoria = escapeHtml(t.categoria || "");
+            const area = pillArea(t.area_soporte, !!t.requiere_revision); // ✅ NUEVO
             const estatus = escapeHtml(t.estatus || "");
             const nombre = escapeHtml(t.nombre || "");
             const email = escapeHtml(t.email || "");
-            const resp = escapeHtml(t.mensaje|| "");
+            const msgUsuario = escapeHtml(t.mensaje || "");
 
             return `
               <tr>
@@ -682,12 +728,13 @@
                 <td>${fecha}</td>
                 <td>${prioridad}</td>
                 <td>${categoria}</td>
+                <td>${area}</td>
                 <td class="status">${estatus}</td>
                 <td>
                   <div><strong>${nombre}</strong></div>
                   <div class="muted">${email}</div>
                 </td>
-                <td>${resp || '<span class="muted">—</span>'}</td>
+                <td>${msgUsuario || '<span class="muted">—</span>'}</td>
               </tr>
             `;
           }).join("");
@@ -705,7 +752,7 @@
         showOk("✅ Actualizado correctamente");
       } catch (err) {
         showError("❌ Error: " + (err?.message || String(err)));
-        els.tbody.innerHTML = `<tr><td colspan="7" class="muted">No se pudieron cargar tickets.</td></tr>`;
+        els.tbody.innerHTML = `<tr><td colspan="8" class="muted">No se pudieron cargar tickets.</td></tr>`;
         els.rangeText.textContent = "—";
       } finally {
         els.refreshBtn.disabled = false;
@@ -723,6 +770,7 @@
       els.prioridad.value = "";
       els.estatus.value = "";
       els.categoria.value = "";
+      els.area.value = ""; // ✅ NUEVO
       els.order.value = "desc";
       offset = 0;
       loadTickets();
@@ -734,7 +782,7 @@
     });
 
     // Cambios en filtros -> reset offset y carga
-    ["prioridad","order","limit"].forEach(id => {
+    ["prioridad","order","limit","area"].forEach(id => { // ✅ NUEVO: area
       document.getElementById(id).addEventListener("change", () => { offset = 0; loadTickets(); });
     });
 
@@ -782,3 +830,4 @@
   </script>
 </body>
 </html>
+```
