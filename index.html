@@ -226,6 +226,77 @@
       font-size: 0.95em;
     }
 
+    /* ==== NUEVO: zona de adjuntos (se ve “integrado”) ==== */
+    .attachments-wrap {
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed rgba(100, 255, 218, 0.35);
+      border-radius: 10px;
+    }
+    .attachments-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .attachments-hint {
+      color: #8892b0;
+      font-size: 0.9em;
+      line-height: 1.4;
+    }
+    .attachments-btn {
+      width: auto;
+      padding: 10px 14px;
+      font-size: 0.9em;
+      letter-spacing: 0.6px;
+      text-transform: none;
+      border-radius: 8px;
+      background: rgba(0, 212, 255, 0.15);
+      border: 1px solid rgba(0, 212, 255, 0.35);
+    }
+    .attachments-btn:hover { filter: brightness(1.05); }
+    .attachments-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .thumb {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(100, 255, 218, 0.2);
+      background: rgba(0,0,0,0.25);
+      min-height: 110px;
+    }
+    .thumb img {
+      width: 100%;
+      height: 110px;
+      object-fit: cover;
+      display: block;
+    }
+    .thumb-meta {
+      padding: 8px 10px;
+      font-size: 0.85em;
+      color: #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+    .remove-btn {
+      width: auto;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.85em;
+      background: rgba(255, 71, 87, 0.18);
+      border: 1px solid rgba(255, 71, 87, 0.35);
+      text-transform: none;
+      letter-spacing: normal;
+    }
+    .remove-btn:hover { filter: brightness(1.05); }
+
     @media (max-width: 768px) {
       h1 { font-size: 2em; }
       .card { padding: 25px; }
@@ -312,6 +383,33 @@
             <textarea id="mensaje" name="mensaje" rows="5" placeholder="Describe tu consulta o problema..." required></textarea>
           </div>
 
+          <!-- ✅ NUEVO: Adjuntar capturas (integrado visualmente) -->
+          <div class="form-group">
+            <label>Adjuntar capturas (opcional)</label>
+
+            <div class="attachments-wrap">
+              <div class="attachments-top">
+                <div class="attachments-hint">
+                  PNG/JPG/WebP • Máx 3 archivos • 5MB c/u
+                </div>
+
+                <button type="button" id="pick-images" class="attachments-btn">📎 Elegir imágenes</button>
+              </div>
+
+              <input
+                id="imagenes"
+                name="imagenes"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                style="display:none;"
+              />
+
+              <div id="attachments-error" class="error-message" style="display:none; margin-top:10px;"></div>
+              <div id="attachments-list" class="attachments-list" style="display:none;"></div>
+            </div>
+          </div>
+
           <button type="submit" id="submit-btn">Enviar</button>
         </div>
       </form>
@@ -343,6 +441,17 @@
 
     const infoMessage = document.getElementById('info-message');
     const formFields = document.getElementById('form-fields');
+
+    // ✅ NUEVO: Adjuntos
+    const pickImagesBtn = document.getElementById('pick-images');
+    const imagenesInput = document.getElementById('imagenes');
+    const attachmentsList = document.getElementById('attachments-list');
+    const attachmentsError = document.getElementById('attachments-error');
+
+    const MAX_FILES = 3;
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const ALLOWED = new Set(['image/png','image/jpeg','image/webp']);
+    let selectedFiles = []; // File[]
 
     // URLs
     const WEBHOOK_URL = 'https://n8n.plai.mx/webhook/soporte-plai-prod';
@@ -406,17 +515,18 @@
       formFields.style.display = 'none';
       emailFieldNoPlantilla.style.display = 'none';
 
-      // ✅ Importantísimo: desactivar required del correo NO plantilla
       setEnabled(emailNoPlantilla, false);
       setRequired(emailNoPlantilla, false);
 
-      // ✅ Activar required del correo plantilla
       setEnabled(emailInput, true);
       setRequired(emailInput, true);
 
       emailInput.value = '';
       hideMessage();
       showMessage('ℹ️ Ingresa tu correo y presiona "Verificar correo".', 'info');
+
+      // limpiar adjuntos
+      clearAttachments();
     }
 
     function setModeNoPlantilla() {
@@ -427,27 +537,25 @@
       formFields.style.display = 'block';
       emailFieldNoPlantilla.style.display = 'block';
 
-      // ✅ Importantísimo: desactivar required del correo plantilla (aunque esté oculto)
       setEnabled(emailInput, false);
       setRequired(emailInput, false);
 
-      // ✅ Activar required del correo NO plantilla
       setEnabled(emailNoPlantilla, true);
       setRequired(emailNoPlantilla, true);
 
-      // Habilitar edición manual
       lockAutoFields(false);
 
-      // Limpiar
       emailInput.value = '';
       emailNoPlantilla.value = '';
       resetAutoFields();
       document.getElementById('asunto').value = '';
       document.getElementById('mensaje').value = '';
       hideMessage();
+
+      // limpiar adjuntos
+      clearAttachments();
     }
 
-    // ✅ Función mejorada para verificar empleado en Directus
     async function verificarEmpleado(correo) {
       try {
         verifyBtn.disabled = true;
@@ -460,34 +568,22 @@
           return;
         }
 
-        // ✅ limit=1 y url construida seguro
         const url = new URL(DIRECTUS_URL);
         url.searchParams.set('fields', 'nombre_completo,posicion,direccion_adscrita.nombre_de_direccion');
         url.searchParams.set('limit', '1');
         url.searchParams.set('filter[correo][_eq]', email);
 
         const headers = { 'Accept': 'application/json' };
-        
-        // ✅ Agregar Bearer token si está configurado
-        if (DIRECTUS_TOKEN) {
-          headers['Authorization'] = `Bearer ${DIRECTUS_TOKEN}`;
-        }
+        if (DIRECTUS_TOKEN) headers['Authorization'] = `Bearer ${DIRECTUS_TOKEN}`;
 
         const response = await fetch(url.toString(), {
           method: 'GET',
           headers: headers,
-          // credentials: 'include', // ❌ quitar
           mode: 'cors'
         });
 
-
-        // Manejo fino de errores HTTP
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('NO_AUTH');
-        }
-        if (!response.ok) {
-          throw new Error(`DIRECTUS_HTTP_${response.status}`);
-        }
+        if (response.status === 401 || response.status === 403) throw new Error('NO_AUTH');
+        if (!response.ok) throw new Error(`DIRECTUS_HTTP_${response.status}`);
 
         const data = await response.json();
         const empleado = data?.data?.[0];
@@ -499,11 +595,7 @@
           return;
         }
 
-        // Separar nombre completo
         const nombreCompleto = String(empleado.nombre_completo || '').trim();
-        const partes = nombreCompleto.split(/\s+/).filter(Boolean);
-        const nombre = partes[0] || '';
-        const apellido = partes.slice(1).join(' ') || '';
 
         formFields.style.display = 'block';
         emailFieldNoPlantilla.style.display = 'none';
@@ -512,11 +604,10 @@
         document.getElementById('puesto').value = empleado.posicion || '';
         document.getElementById('area').value = empleado.direccion_adscrita?.nombre_de_direccion || '';
 
-        // Bloquear campos autollenados
         lockAutoFields(true);
 
         empleadoVerificado = true;
-        showMessage('✅ Empleado verificado. Completa asunto y mensaje.', 'info');
+        showMessage('✅ Empleado verificado. Completa asunto, mensaje y adjuntos (opcional).', 'info');
 
         setTimeout(() => {
           document.getElementById('asunto').focus();
@@ -526,7 +617,6 @@
       } catch (error) {
         console.error('Error al verificar empleado:', error);
 
-        // ✅ Detectar CORS / network
         if (error instanceof TypeError && String(error.message).toLowerCase().includes('fetch')) {
           showMessage('❌ No se pudo consultar el directorio (bloqueo CORS o red). Revisa que Directus permita este dominio.', 'error');
         } else if (error.message === 'NO_AUTH') {
@@ -542,6 +632,100 @@
         verifyBtn.textContent = 'Verificar correo';
       }
     }
+
+    // =========================
+    // ✅ Adjuntos: helpers
+    // =========================
+    function showAttachmentsError(msg) {
+      attachmentsError.style.display = 'block';
+      attachmentsError.textContent = msg;
+    }
+    function hideAttachmentsError() {
+      attachmentsError.style.display = 'none';
+      attachmentsError.textContent = '';
+    }
+
+    function clearAttachments() {
+      selectedFiles = [];
+      imagenesInput.value = '';
+      attachmentsList.style.display = 'none';
+      attachmentsList.innerHTML = '';
+      hideAttachmentsError();
+    }
+
+    function validateFiles(files) {
+      if (files.length > MAX_FILES) {
+        return `Máximo ${MAX_FILES} imágenes.`;
+      }
+      for (const f of files) {
+        if (!ALLOWED.has(f.type)) return `Formato no permitido: ${f.name}`;
+        if (f.size > MAX_SIZE) return `Archivo muy grande (máx 5MB): ${f.name}`;
+      }
+      return null;
+    }
+
+    function renderAttachments() {
+      if (!selectedFiles.length) {
+        attachmentsList.style.display = 'none';
+        attachmentsList.innerHTML = '';
+        return;
+      }
+
+      attachmentsList.style.display = 'grid';
+      attachmentsList.innerHTML = '';
+
+      selectedFiles.forEach((file, idx) => {
+        const url = URL.createObjectURL(file);
+
+        const card = document.createElement('div');
+        card.className = 'thumb';
+        card.innerHTML = `
+          <img src="${url}" alt="captura" />
+          <div class="thumb-meta">
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;">
+              ${file.name}
+            </span>
+            <button type="button" class="remove-btn" data-idx="${idx}">Quitar</button>
+          </div>
+        `;
+
+        attachmentsList.appendChild(card);
+      });
+
+      // listeners de quitar
+      attachmentsList.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const i = Number(e.currentTarget.getAttribute('data-idx'));
+          selectedFiles.splice(i, 1);
+          renderAttachments();
+        });
+      });
+    }
+
+    // Botón “Elegir imágenes”
+    pickImagesBtn.addEventListener('click', () => {
+      hideAttachmentsError();
+      imagenesInput.click();
+    });
+
+    // Cambio de input file
+    imagenesInput.addEventListener('change', () => {
+      hideAttachmentsError();
+      const files = [...(imagenesInput.files || [])];
+
+      // Reemplazamos selección (simple y claro)
+      const err = validateFiles(files);
+      if (err) {
+        showAttachmentsError(err);
+        imagenesInput.value = '';
+        selectedFiles = [];
+        renderAttachments();
+        return;
+      }
+
+      selectedFiles = files;
+      renderAttachments();
+    });
 
     // Eventos radio
     radioSi.addEventListener('change', (e) => {
@@ -583,22 +767,33 @@
       }
 
       const correoFinal = esPlantilla ? emailInput.value.trim() : emailNoPlantilla.value.trim();
-
-      // Validar correoFinal según modo
       if (!correoFinal) {
         showMessage('⚠️ Falta el correo.', 'error');
         return;
       }
 
-      const data = {
-        nombre: document.getElementById('nombre-completo').value,
-        email: correoFinal,
-        area: document.getElementById('area').value,
-        puesto: document.getElementById('puesto').value,
-        asunto: document.getElementById('asunto').value,
-        mensaje: document.getElementById('mensaje').value,
-        es_plantilla: esPlantilla
-      };
+      // Validar adjuntos antes de enviar
+      hideAttachmentsError();
+      const err = validateFiles(selectedFiles);
+      if (err) {
+        showAttachmentsError(err);
+        return;
+      }
+
+      // ✅ Enviar como multipart/form-data
+      const fd = new FormData();
+      fd.append('nombre', document.getElementById('nombre-completo').value);
+      fd.append('email', correoFinal);
+      fd.append('area', document.getElementById('area').value);
+      fd.append('puesto', document.getElementById('puesto').value);
+      fd.append('asunto', document.getElementById('asunto').value);
+      fd.append('mensaje', document.getElementById('mensaje').value);
+      fd.append('es_plantilla', String(esPlantilla));
+
+      // Adjuntos (puedes cambiar el nombre "imagenes" si quieres)
+      selectedFiles.forEach((file) => {
+        fd.append('imagenes', file, file.name);
+      });
 
       openModal();
       modalBody.innerHTML = `
@@ -623,8 +818,9 @@
       try {
         const res = await fetch(WEBHOOK_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(data),
+          // ❌ NO pongas Content-Type aquí. El browser lo pone con boundary.
+          headers: { 'Accept': 'application/json' },
+          body: fd,
         });
 
         if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
@@ -695,12 +891,13 @@
         formFields.style.display = 'none';
         hideMessage();
 
-        // Re-habilitar correos por si quedaron disabled
+        clearAttachments();
+
         setEnabled(emailInput, true);
         setEnabled(emailNoPlantilla, true);
 
-      } catch (err) {
-        console.error('Error completo:', err);
+      } catch (err2) {
+        console.error('Error completo:', err2);
         modalBody.innerHTML = `
           <div style="text-align:center; padding:40px 20px;">
             <div style="font-size:60px; margin-bottom:20px;">❌</div>
@@ -709,7 +906,7 @@
               <div style="color:#ff4757; font-weight:bold; margin-bottom:10px;">No se pudo procesar</div>
               <div style="color:#e0e0e0;">Intenta nuevamente.</div>
               <div style="font-size:0.85em; color:#8892b0; margin-top:15px; font-family:monospace;">
-                Detalle: ${err.message}
+                Detalle: ${err2.message}
               </div>
             </div>
           </div>
