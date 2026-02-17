@@ -226,25 +226,46 @@
       font-size: 0.95em;
     }
 
-    /* ==== NUEVO: zona de adjuntos (se ve “integrado”) ==== */
+    /* =========================
+       Adjuntos (select + drag&drop)
+       ========================= */
     .attachments-wrap {
       padding: 14px;
       background: rgba(255, 255, 255, 0.03);
       border: 1px dashed rgba(100, 255, 218, 0.35);
       border-radius: 10px;
+      transition: all 0.2s ease;
     }
+
+    .attachments-wrap.dragover {
+      border-color: rgba(0, 212, 255, 0.8);
+      box-shadow: 0 0 25px rgba(0, 212, 255, 0.15);
+      background: rgba(0, 212, 255, 0.05);
+    }
+
     .attachments-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
       margin-bottom: 12px;
+      flex-wrap: wrap;
     }
+
     .attachments-hint {
       color: #8892b0;
       font-size: 0.9em;
       line-height: 1.4;
+      flex: 1;
+      min-width: 220px;
     }
+
+    .attachments-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .attachments-btn {
       width: auto;
       padding: 10px 14px;
@@ -255,13 +276,36 @@
       background: rgba(0, 212, 255, 0.15);
       border: 1px solid rgba(0, 212, 255, 0.35);
     }
+
+    .attachments-btn.secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
     .attachments-btn:hover { filter: brightness(1.05); }
+
+    .dropzone {
+      border: 1px solid rgba(100, 255, 218, 0.18);
+      border-radius: 10px;
+      padding: 16px;
+      background: rgba(0,0,0,0.18);
+      color: #8892b0;
+      font-size: 0.95em;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+
+    .dropzone strong { color: #64ffda; font-weight: 700; }
+
     .attachments-list {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 12px;
-      margin-top: 10px;
+      margin-top: 12px;
     }
+
     .thumb {
       position: relative;
       border-radius: 10px;
@@ -270,12 +314,14 @@
       background: rgba(0,0,0,0.25);
       min-height: 110px;
     }
+
     .thumb img {
       width: 100%;
       height: 110px;
       object-fit: cover;
       display: block;
     }
+
     .thumb-meta {
       padding: 8px 10px;
       font-size: 0.85em;
@@ -285,6 +331,7 @@
       gap: 8px;
       align-items: center;
     }
+
     .remove-btn {
       width: auto;
       padding: 6px 10px;
@@ -294,7 +341,9 @@
       border: 1px solid rgba(255, 71, 87, 0.35);
       text-transform: none;
       letter-spacing: normal;
+      cursor: pointer;
     }
+
     .remove-btn:hover { filter: brightness(1.05); }
 
     @media (max-width: 768px) {
@@ -383,17 +432,25 @@
             <textarea id="mensaje" name="mensaje" rows="5" placeholder="Describe tu consulta o problema..." required></textarea>
           </div>
 
-          <!-- ✅ NUEVO: Adjuntar capturas (integrado visualmente) -->
+          <!-- Adjuntar capturas (opcional) -->
           <div class="form-group">
             <label>Adjuntar capturas (opcional)</label>
 
-            <div class="attachments-wrap">
+            <div id="attachments-wrap" class="attachments-wrap">
               <div class="attachments-top">
                 <div class="attachments-hint">
-                  PNG/JPG/WebP • Máx 3 archivos • 5MB c/u
+                  Arrastra y suelta aquí o usa el botón. <br/>
+                  <strong>PNG/JPG/WebP</strong> • Máx <strong>3</strong> archivos • <strong>5MB</strong> c/u
                 </div>
 
-                <button type="button" id="pick-images" class="attachments-btn">📎 Elegir imágenes</button>
+                <div class="attachments-actions">
+                  <button type="button" id="pick-images" class="attachments-btn">📎 Elegir imágenes</button>
+                  <button type="button" id="clear-images" class="attachments-btn secondary">🧹 Limpiar</button>
+                </div>
+              </div>
+
+              <div id="dropzone" class="dropzone" role="button" tabindex="0">
+                Suelta tus imágenes aquí o <strong>haz clic</strong> para seleccionarlas
               </div>
 
               <input
@@ -442,8 +499,11 @@
     const infoMessage = document.getElementById('info-message');
     const formFields = document.getElementById('form-fields');
 
-    // ✅ NUEVO: Adjuntos
+    // Adjuntos
+    const attachmentsWrap = document.getElementById('attachments-wrap');
+    const dropzone = document.getElementById('dropzone');
     const pickImagesBtn = document.getElementById('pick-images');
+    const clearImagesBtn = document.getElementById('clear-images');
     const imagenesInput = document.getElementById('imagenes');
     const attachmentsList = document.getElementById('attachments-list');
     const attachmentsError = document.getElementById('attachments-error');
@@ -452,6 +512,7 @@
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
     const ALLOWED = new Set(['image/png','image/jpeg','image/webp']);
     let selectedFiles = []; // File[]
+    const previewUrls = new Map(); // key -> objectURL
 
     // URLs
     const WEBHOOK_URL = 'https://n8n.plai.mx/webhook/soporte-plai-prod';
@@ -525,7 +586,6 @@
       hideMessage();
       showMessage('ℹ️ Ingresa tu correo y presiona "Verificar correo".', 'info');
 
-      // limpiar adjuntos
       clearAttachments();
     }
 
@@ -552,7 +612,6 @@
       document.getElementById('mensaje').value = '';
       hideMessage();
 
-      // limpiar adjuntos
       clearAttachments();
     }
 
@@ -634,7 +693,7 @@
     }
 
     // =========================
-    // ✅ Adjuntos: helpers
+    // Adjuntos: helpers
     // =========================
     function showAttachmentsError(msg) {
       attachmentsError.style.display = 'block';
@@ -645,18 +704,12 @@
       attachmentsError.textContent = '';
     }
 
-    function clearAttachments() {
-      selectedFiles = [];
-      imagenesInput.value = '';
-      attachmentsList.style.display = 'none';
-      attachmentsList.innerHTML = '';
-      hideAttachmentsError();
+    function fileKey(f) {
+      return `${f.name}__${f.size}__${f.lastModified}`;
     }
 
     function validateFiles(files) {
-      if (files.length > MAX_FILES) {
-        return `Máximo ${MAX_FILES} imágenes.`;
-      }
+      if (files.length > MAX_FILES) return `Máximo ${MAX_FILES} imágenes.`;
       for (const f of files) {
         if (!ALLOWED.has(f.type)) return `Formato no permitido: ${f.name}`;
         if (f.size > MAX_SIZE) return `Archivo muy grande (máx 5MB): ${f.name}`;
@@ -664,7 +717,52 @@
       return null;
     }
 
+    function revokeAllPreviews() {
+      for (const url of previewUrls.values()) {
+        try { URL.revokeObjectURL(url); } catch (_) {}
+      }
+      previewUrls.clear();
+    }
+
+    function clearAttachments() {
+      selectedFiles = [];
+      imagenesInput.value = '';
+      attachmentsList.style.display = 'none';
+      attachmentsList.innerHTML = '';
+      hideAttachmentsError();
+      revokeAllPreviews();
+    }
+
+    function addFiles(newFiles) {
+      hideAttachmentsError();
+      const incoming = [...(newFiles || [])].filter(Boolean);
+      if (!incoming.length) return;
+
+      // Merge + dedupe
+      const merged = [...selectedFiles, ...incoming];
+      const seen = new Set();
+      const deduped = [];
+      for (const f of merged) {
+        const k = fileKey(f);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        deduped.push(f);
+      }
+
+      const err = validateFiles(deduped);
+      if (err) {
+        showAttachmentsError(err);
+        return;
+      }
+
+      selectedFiles = deduped;
+      renderAttachments();
+    }
+
     function renderAttachments() {
+      // reset previews (evita memory leak)
+      revokeAllPreviews();
+
       if (!selectedFiles.length) {
         attachmentsList.style.display = 'none';
         attachmentsList.innerHTML = '';
@@ -675,7 +773,9 @@
       attachmentsList.innerHTML = '';
 
       selectedFiles.forEach((file, idx) => {
+        const k = fileKey(file);
         const url = URL.createObjectURL(file);
+        previewUrls.set(k, url);
 
         const card = document.createElement('div');
         card.className = 'thumb';
@@ -692,7 +792,6 @@
         attachmentsList.appendChild(card);
       });
 
-      // listeners de quitar
       attachmentsList.querySelectorAll('.remove-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const i = Number(e.currentTarget.getAttribute('data-idx'));
@@ -702,39 +801,78 @@
       });
     }
 
-    // Botón “Elegir imágenes”
+    // =========================
+    // Adjuntos: select
+    // =========================
     pickImagesBtn.addEventListener('click', () => {
       hideAttachmentsError();
       imagenesInput.click();
     });
 
-    // Cambio de input file
-    imagenesInput.addEventListener('change', () => {
-      hideAttachmentsError();
-      const files = [...(imagenesInput.files || [])];
-
-      // Reemplazamos selección (simple y claro)
-      const err = validateFiles(files);
-      if (err) {
-        showAttachmentsError(err);
-        imagenesInput.value = '';
-        selectedFiles = [];
-        renderAttachments();
-        return;
-      }
-
-      selectedFiles = files;
-      renderAttachments();
+    clearImagesBtn.addEventListener('click', () => {
+      clearAttachments();
     });
+
+    // Click en dropzone = seleccionar
+    dropzone.addEventListener('click', () => {
+      hideAttachmentsError();
+      imagenesInput.click();
+    });
+
+    // Teclado (accesibilidad)
+    dropzone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        imagenesInput.click();
+      }
+    });
+
+    // Change: acumular (NO reemplazar)
+    imagenesInput.addEventListener('change', () => {
+      const files = [...(imagenesInput.files || [])];
+      // reset input para permitir re-seleccionar el mismo archivo y dispare change
+      imagenesInput.value = '';
+      addFiles(files);
+    });
+
+    // =========================
+    // Adjuntos: drag & drop
+    // =========================
+    function isFileDrag(evt) {
+      const dt = evt.dataTransfer;
+      return dt && dt.types && [...dt.types].includes('Files');
+    }
+
+    ['dragenter','dragover'].forEach(evName => {
+      attachmentsWrap.addEventListener(evName, (e) => {
+        if (!isFileDrag(e)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        attachmentsWrap.classList.add('dragover');
+      });
+    });
+
+    ['dragleave','drop'].forEach(evName => {
+      attachmentsWrap.addEventListener(evName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        attachmentsWrap.classList.remove('dragover');
+      });
+    });
+
+    attachmentsWrap.addEventListener('drop', (e) => {
+      if (!isFileDrag(e)) return;
+      const files = [...(e.dataTransfer.files || [])];
+      addFiles(files);
+    });
+
+    // Evita que el drop abra el archivo en el navegador
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => e.preventDefault());
 
     // Eventos radio
-    radioSi.addEventListener('change', (e) => {
-      if (e.target.checked) setModePlantilla();
-    });
-
-    radioNo.addEventListener('change', (e) => {
-      if (e.target.checked) setModeNoPlantilla();
-    });
+    radioSi.addEventListener('change', (e) => { if (e.target.checked) setModePlantilla(); });
+    radioNo.addEventListener('change', (e) => { if (e.target.checked) setModeNoPlantilla(); });
 
     // Verificar
     verifyBtn.addEventListener('click', () => {
@@ -772,7 +910,7 @@
         return;
       }
 
-      // Validar adjuntos antes de enviar
+      // Validar adjuntos
       hideAttachmentsError();
       const err = validateFiles(selectedFiles);
       if (err) {
@@ -780,7 +918,7 @@
         return;
       }
 
-      // ✅ Enviar como multipart/form-data
+      // multipart/form-data
       const fd = new FormData();
       fd.append('nombre', document.getElementById('nombre-completo').value);
       fd.append('email', correoFinal);
@@ -790,7 +928,7 @@
       fd.append('mensaje', document.getElementById('mensaje').value);
       fd.append('es_plantilla', String(esPlantilla));
 
-      // Adjuntos (puedes cambiar el nombre "imagenes" si quieres)
+      // Adjuntos: mismo nombre "imagenes" repetido -> llega como múltiples en n8n
       selectedFiles.forEach((file) => {
         fd.append('imagenes', file, file.name);
       });
@@ -818,8 +956,7 @@
       try {
         const res = await fetch(WEBHOOK_URL, {
           method: 'POST',
-          // ❌ NO pongas Content-Type aquí. El browser lo pone con boundary.
-          headers: { 'Accept': 'application/json' },
+          headers: { 'Accept': 'application/json' }, // NO Content-Type
           body: fd,
         });
 
@@ -917,7 +1054,7 @@
       }
     });
 
-    // Estado inicial: no permitir submit hasta elegir opción
+    // Estado inicial
     setEnabled(emailInput, false);
     setEnabled(emailNoPlantilla, false);
     setRequired(emailInput, false);
