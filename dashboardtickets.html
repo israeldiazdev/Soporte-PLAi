@@ -359,38 +359,34 @@
     .small { font-size: 0.8em; color: #8892b0; margin-top: 4px; }
     .btn-group { display: flex; gap: 8px; }
 
-    /* ✅ PREVIEW DE IMAGEN + MODAL */
-    .imgCell { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-
-    .thumbLink {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 44px;
-      height: 44px;
+    /* ✅ PREVIEW + MODAL */
+    .imgCell { display: flex; gap: 10px; align-items: center; }
+    .thumbBtn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 10px;
       border-radius: 10px;
       border: 1px solid rgba(100, 255, 218, 0.25);
       background: rgba(255,255,255,0.05);
+      color: #e0e0e0;
       cursor: pointer;
       transition: all .2s ease;
-      overflow: hidden;
       text-decoration: none;
+      font-weight: 700;
+      font-size: 0.85em;
+      white-space: nowrap;
     }
-
-    .thumbLink:hover {
+    .thumbBtn:hover {
       border-color: rgba(100, 255, 218, 0.55);
       background: rgba(100, 255, 218, 0.08);
       transform: translateY(-1px);
     }
-
     .thumb {
-      width: 44px;
-      height: 44px;
-      object-fit: cover;
+      width: 44px; height: 44px;
       border-radius: 10px;
+      object-fit: cover;
+      border: 1px solid rgba(255,255,255,0.12);
       background: rgba(0,0,0,0.25);
     }
-
     .modal {
       position: fixed;
       inset: 0;
@@ -403,7 +399,6 @@
       backdrop-filter: blur(6px);
     }
     .modal.show { display: flex; }
-
     .modalCard {
       width: min(1100px, 100%);
       background: rgba(15, 18, 40, 0.92);
@@ -412,24 +407,14 @@
       box-shadow: 0 20px 60px rgba(0,0,0,0.45);
       overflow: hidden;
     }
-
     .modalHeader {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      display: flex; align-items: center; justify-content: space-between;
       gap: 12px;
       padding: 14px 16px;
       border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-
-    .modalTitle {
-      font-weight: 800;
-      color: #64ffda;
-      letter-spacing: 0.3px;
-    }
-
+    .modalTitle { font-weight: 800; color: #64ffda; letter-spacing: 0.3px; }
     .modalActions { display: flex; gap: 10px; align-items: center; }
-
     .linkBtn {
       padding: 10px 12px;
       border-radius: 10px;
@@ -446,7 +431,6 @@
       background: rgba(100,255,218,0.08);
       transform: translateY(-1px);
     }
-
     .closeBtn {
       padding: 10px 12px;
       border-radius: 10px;
@@ -457,11 +441,7 @@
       cursor: pointer;
       transition: all .2s ease;
     }
-    .closeBtn:hover {
-      background: rgba(255,71,87,0.18);
-      transform: translateY(-1px);
-    }
-
+    .closeBtn:hover { background: rgba(255,71,87,0.18); transform: translateY(-1px); }
     .modalBody { padding: 16px; }
     .modalImg {
       width: 100%;
@@ -476,7 +456,6 @@
       .controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
-
     @media (max-width: 560px) {
       h1 { font-size: 1.5em; }
       .cards { grid-template-columns: 1fr; }
@@ -642,7 +621,6 @@
     </section>
   </main>
 
-  <!-- ✅ MODAL PARA VER IMAGEN -->
   <div class="modal" id="imgModal" aria-hidden="true">
     <div class="modalCard" role="dialog" aria-modal="true" aria-label="Imagen adjunta">
       <div class="modalHeader">
@@ -660,7 +638,7 @@
 
   <script>
     // ===========================
-    // CONFIG (PRODUCCIÓN)
+    // CONFIG
     // ===========================
     const API_BASE = "https://n8n.plai.mx/webhook";
     const API_PATH = "/dashboard/tickets";
@@ -671,6 +649,9 @@
     // ===========================
     let offset = 0;
     let autoTimer = null;
+
+    // ✅ guardamos lo que venga del API (aunque sean 400)
+    let allTicketsCache = [];
 
     const els = {
       endpointText: document.getElementById("endpointText"),
@@ -697,8 +678,6 @@
       kAlta: document.getElementById("kAlta"),
       kMedia: document.getElementById("kMedia"),
       kBaja: document.getElementById("kBaja"),
-
-      // modal
       imgModal: document.getElementById("imgModal"),
       modalImg: document.getElementById("modalImg"),
       modalTitle: document.getElementById("modalTitle"),
@@ -729,9 +708,9 @@
     }
 
     function escapeHtml(s) {
-      return String(s ?? "").replace(/[&<>"']/g, m => {
-        return ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" })[m];
-      });
+      return String(s ?? "").replace(/[&<>"']/g, m => (
+        { "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m]
+      ));
     }
 
     function fmtDate(iso) {
@@ -757,7 +736,6 @@
         a === "infraestructura" ? "Infraestructura" :
         a === "sin_clasificar" ? "Sin clasificar" :
         (area || "—");
-
       const rev = requiereRevision ? `<span class="flag"><span class="dot"></span>Revisión</span>` : "";
       return `<span>${escapeHtml(label)}</span>${rev}`;
     }
@@ -775,7 +753,7 @@
 
     function buildQuery() {
       const q = new URLSearchParams();
-
+      // OJO: seguimos enviando filtros al API (si lo arreglas luego, funcionará server-side)
       const search = els.search.value.trim();
       const prioridad = els.prioridad.value.trim();
       const estatus = els.estatus.value.trim();
@@ -791,32 +769,71 @@
       if (categoria) q.set("categoria", categoria);
       if (area) q.set("area", area);
       if (order) q.set("order", order);
-
-      q.set("limit", limit);
+      if (limit) q.set("limit", limit);
       q.set("offset", String(offset));
-
       if (token) q.set("token", token);
 
       return q.toString();
     }
 
-    // ===========================
-    // ✅ Attachments (0..3)
-    // Espera: t.attachments = [{ url, file_name, mime_type, drive_file_id }, ...]
-    // ===========================
-    function getAttachments(t) {
-      const arr = (t && t.attachments) || [];
-      if (!Array.isArray(arr)) return [];
+    // ✅ detecta la lista de tickets aunque venga en estructuras distintas
+    function extractTickets(data) {
+      if (!data) return [];
+      if (Array.isArray(data.tickets)) return data.tickets;
+      if (data.body && Array.isArray(data.body.tickets)) return data.body.tickets;
+      if (data.data && Array.isArray(data.data.tickets)) return data.data.tickets;
+      if (Array.isArray(data.rows)) return data.rows;
+      return [];
+    }
 
-      // solo http/https + máximo 3
-      return arr
-        .map(a => ({
-          url: String(a?.url || "").trim(),
-          file_name: String(a?.file_name || "archivo").trim(),
-          mime_type: String(a?.mime_type || "").trim(),
-        }))
-        .filter(a => /^https?:\/\//i.test(a.url))
-        .slice(0, 3);
+    // ✅ URL de imagen (si existe)
+    function getImageUrl(t) {
+      const raw = (t && (t.imagen_url || t.image_url || t.adjunto_url || t.url_imagen)) || "";
+      const url = String(raw || "").trim();
+      if (!url) return "";
+      if (!/^https?:\/\//i.test(url)) return "";
+      return url;
+    }
+
+    // ✅ FILTRADO CLIENT-SIDE (arregla “no funcionan filtros” aunque el API mande todo)
+    function applyClientFilters(list) {
+      const search = els.search.value.trim().toLowerCase();
+      const prioridad = els.prioridad.value.trim().toLowerCase();
+      const estatus = els.estatus.value.trim().toLowerCase();
+      const categoria = els.categoria.value.trim().toLowerCase();
+      const area = els.area.value.trim().toLowerCase();
+
+      return (list || []).filter(t => {
+        const p = String(t.prioridad || "").toLowerCase();
+        const e = String(t.estatus || "").toLowerCase();
+        const c = String(t.categoria || "").toLowerCase();
+        const a = String(t.area_soporte || "").toLowerCase();
+
+        if (prioridad && p !== prioridad) return false;
+        if (estatus && !e.includes(estatus)) return false;     // includes para “en revisión”
+        if (categoria && !c.includes(categoria)) return false; // includes para “General”, “Facturación”
+        if (area && a !== area) return false;
+
+        if (search) {
+          const blob = [
+            t.ticket_id, t.nombre, t.email, t.mensaje
+          ].map(x => String(x || "").toLowerCase()).join(" ");
+          if (!blob.includes(search)) return false;
+        }
+
+        return true;
+      });
+    }
+
+    // ✅ orden client-side (si el API ignora order)
+    function sortClient(list) {
+      const dir = (els.order.value || "desc").toLowerCase();
+      const factor = dir === "asc" ? 1 : -1;
+      return [...(list || [])].sort((a,b) => {
+        const da = new Date(a.fecha_creacion || a.fecha_actualizacion || 0).getTime();
+        const db = new Date(b.fecha_creacion || b.fecha_actualizacion || 0).getTime();
+        return (da - db) * factor;
+      });
     }
 
     // ===========================
@@ -838,21 +855,106 @@
     }
 
     els.closeModal.addEventListener("click", closeModal);
-    els.imgModal.addEventListener("click", (e) => {
-      if (e.target === els.imgModal) closeModal();
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeModal();
-    });
+    els.imgModal.addEventListener("click", (e) => { if (e.target === els.imgModal) closeModal(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
     // ===========================
-    // Fetch + Render
+    // Render (usa CACHE + filtros/paginación client-side)
+    // ===========================
+    function renderFromCache() {
+      const lim = parseInt(els.limit.value, 10) || 50;
+
+      let filtered = applyClientFilters(allTicketsCache);
+      filtered = sortClient(filtered);
+
+      // si offset quedó fuera (por ejemplo al cambiar filtros), lo corregimos
+      if (offset >= filtered.length) offset = 0;
+      els.offsetText.textContent = String(offset);
+
+      const page = filtered.slice(offset, offset + lim);
+
+      // KPIs (de la página actual)
+      const alta = page.filter(t => (t.prioridad || "").toLowerCase() === "alta").length;
+      const media = page.filter(t => (t.prioridad || "").toLowerCase() === "media").length;
+      const baja = page.filter(t => (t.prioridad || "").toLowerCase() === "baja").length;
+
+      els.kCount.textContent = String(page.length);
+      els.kAlta.textContent = String(alta);
+      els.kMedia.textContent = String(media);
+      els.kBaja.textContent = String(baja);
+
+      // Tabla
+      if (page.length === 0) {
+        els.tbody.innerHTML = `<tr><td colspan="9" class="muted">No hay resultados con esos filtros.</td></tr>`;
+      } else {
+        els.tbody.innerHTML = page.map(t => {
+          const idRaw = (t.ticket_id || "");
+          const id = escapeHtml(idRaw);
+          const fecha = escapeHtml(fmtDate(t.fecha_creacion || t.fecha_actualizacion));
+          const prioridadHtml = pillPrioridad(t.prioridad);
+          const categoriaHtml = escapeHtml(t.categoria || "");
+          const areaHtml = pillArea(t.area_soporte, !!t.requiere_revision);
+          const estatusHtml = escapeHtml(t.estatus || "");
+          const nombre = escapeHtml(t.nombre || "");
+          const email = escapeHtml(t.email || "");
+          const msgUsuario = escapeHtml(t.mensaje || "");
+
+          const imgUrl = getImageUrl(t);
+          const adjuntoCell = imgUrl
+            ? `
+              <div class="imgCell">
+                <img class="thumb" src="${imgUrl}" alt="Adjunto ${id}" loading="lazy" referrerpolicy="no-referrer" />
+                <button class="thumbBtn" type="button" data-img="${imgUrl}" data-title="Adjunto • ${escapeHtml(idRaw)}">Ver</button>
+              </div>
+            `
+            : `<span class="muted">—</span>`;
+
+          return `
+            <tr>
+              <td><strong style="color:#00d4ff;">${id}</strong></td>
+              <td>${fecha}</td>
+              <td>${prioridadHtml}</td>
+              <td>${categoriaHtml}</td>
+              <td>${areaHtml}</td>
+              <td class="status">${estatusHtml}</td>
+              <td>
+                <div><strong>${nombre}</strong></div>
+                <div class="muted">${email}</div>
+              </td>
+              <td>${msgUsuario || '<span class="muted">—</span>'}</td>
+              <td>${adjuntoCell}</td>
+            </tr>
+          `;
+        }).join("");
+
+        // modal buttons
+        els.tbody.querySelectorAll("button[data-img]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const img = btn.getAttribute("data-img");
+            const title = btn.getAttribute("data-title") || "Adjunto";
+            if (img) openModal(img, title);
+          });
+        });
+      }
+
+      const total = filtered.length;
+      const from = total ? (offset + 1) : 0;
+      const to = total ? Math.min(offset + page.length, total) : 0;
+      els.rangeText.textContent = total
+        ? `Mostrando ${from}–${to} de ${total} (límite ${lim})`
+        : `Mostrando 0 resultados`;
+
+      els.prevBtn.disabled = offset === 0;
+      els.nextBtn.disabled = (offset + lim) >= total;
+    }
+
+    // ===========================
+    // Fetch (solo actualiza cache)
     // ===========================
     async function loadTickets() {
       clearMessages();
       els.refreshBtn.disabled = true;
       els.msg.textContent = "Cargando tickets…";
-      els.offsetText.textContent = String(offset);
 
       saveToken();
 
@@ -866,99 +968,24 @@
           const msg = data?.error || data?.message || ("HTTP " + res.status);
           throw new Error(msg);
         }
-
         if (!data || data.ok !== true) {
-          throw new Error("Respuesta inesperada del API.");
+          // tolerante: si tu Unwrap/Build cambia, aun así intentamos sacar tickets
+          // pero dejamos aviso
+          const maybe = extractTickets(data);
+          if (!maybe.length) throw new Error("Respuesta inesperada del API.");
         }
 
-        const tickets = Array.isArray(data.tickets) ? data.tickets : [];
+        // ✅ actualiza cache
+        allTicketsCache = extractTickets(data);
+        if (!Array.isArray(allTicketsCache)) allTicketsCache = [];
 
-        // KPIs (solo de la página actual)
-        const alta = tickets.filter(t => (t.prioridad || "").toLowerCase() === "alta").length;
-        const media = tickets.filter(t => (t.prioridad || "").toLowerCase() === "media").length;
-        const baja = tickets.filter(t => (t.prioridad || "").toLowerCase() === "baja").length;
-
-        els.kCount.textContent = String(tickets.length);
-        els.kAlta.textContent = String(alta);
-        els.kMedia.textContent = String(media);
-        els.kBaja.textContent = String(baja);
-
-        // Tabla
-        if (tickets.length === 0) {
-          els.tbody.innerHTML = `<tr><td colspan="9" class="muted">No hay resultados con esos filtros.</td></tr>`;
-        } else {
-          els.tbody.innerHTML = tickets.map(t => {
-            const ticketIdRaw = (t.ticket_id || "");
-            const id = escapeHtml(ticketIdRaw);
-            const fecha = escapeHtml(fmtDate(t.fecha_creacion || t.fecha_actualizacion));
-            const prioridad = pillPrioridad(t.prioridad);
-            const categoria = escapeHtml(t.categoria || "");
-            const area = pillArea(t.area_soporte, !!t.requiere_revision);
-            const estatus = escapeHtml(t.estatus || "");
-            const nombre = escapeHtml(t.nombre || "");
-            const email = escapeHtml(t.email || "");
-            const msgUsuario = escapeHtml(t.mensaje || "");
-
-            // ✅ Adjuntos (0..3)
-            const atts = getAttachments(t);
-            const adjuntoCell = atts.length
-              ? `
-                <div class="imgCell">
-                  ${atts.map((a, idx) => {
-                    const u = escapeHtml(a.url);
-                    const title = escapeHtml(a.file_name || `Adjunto ${idx+1}`);
-                    // data-* para abrir modal
-                    return `
-                      <a class="thumbLink" href="javascript:void(0)"
-                         data-img="${u}" data-title="${title} • ${escapeHtml(ticketIdRaw)}">
-                        <img class="thumb" src="${u}" alt="${title}" loading="lazy" referrerpolicy="no-referrer" />
-                      </a>
-                    `;
-                  }).join("")}
-                </div>
-              `
-              : `<span class="muted">—</span>`;
-
-            return `
-              <tr>
-                <td><strong style="color: #00d4ff;">${id}</strong></td>
-                <td>${fecha}</td>
-                <td>${prioridad}</td>
-                <td>${categoria}</td>
-                <td>${area}</td>
-                <td class="status">${estatus}</td>
-                <td>
-                  <div><strong>${nombre}</strong></div>
-                  <div class="muted">${email}</div>
-                </td>
-                <td>${msgUsuario || '<span class="muted">—</span>'}</td>
-                <td>${adjuntoCell}</td>
-              </tr>
-            `;
-          }).join("");
-
-          // ✅ Click delegación: abrir modal (miniaturas)
-          els.tbody.querySelectorAll("[data-img]").forEach(el => {
-            el.addEventListener("click", () => {
-              const img = el.getAttribute("data-img") || "";
-              const title = el.getAttribute("data-title") || "Adjunto";
-              if (img) openModal(img, title);
-            });
-          });
-        }
-
-        const lim = parseInt(els.limit.value, 10) || 50;
-        const from = offset + 1;
-        const to = offset + tickets.length;
-        els.rangeText.textContent = tickets.length ? `Mostrando ${from}–${to} (límite ${lim})` : `Mostrando 0 resultados`;
-
-        // paginación simple
-        els.prevBtn.disabled = offset === 0;
-        els.nextBtn.disabled = tickets.length < lim;
+        // ✅ render desde cache (filtros/paginación client)
+        renderFromCache();
 
         showOk("✅ Actualizado correctamente");
       } catch (err) {
         showError("❌ Error: " + (err?.message || String(err)));
+        allTicketsCache = [];
         els.tbody.innerHTML = `<tr><td colspan="9" class="muted">No se pudieron cargar tickets.</td></tr>`;
         els.rangeText.textContent = "—";
       } finally {
@@ -980,41 +1007,53 @@
       els.area.value = "";
       els.order.value = "desc";
       offset = 0;
-      loadTickets();
+      renderFromCache(); // refleja limpieza instantánea
+      loadTickets();     // y refresca desde API
     });
 
-    // Buscar con Enter
-    els.search.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { offset = 0; loadTickets(); }
+    // Enter en inputs
+    ["search","estatus","categoria"].forEach(id => {
+      document.getElementById(id).addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { offset = 0; loadTickets(); }
+      });
     });
 
-    // Cambios en filtros -> reset offset y carga
+    // Cambios en filtros -> reset offset y render inmediato (y luego fetch)
     ["prioridad","order","limit","area"].forEach(id => {
-      document.getElementById(id).addEventListener("change", () => { offset = 0; loadTickets(); });
+      document.getElementById(id).addEventListener("change", () => {
+        offset = 0;
+        renderFromCache();
+        loadTickets();
+      });
     });
 
-    // token -> guardar
+    // input typing: si quieres que filtre “en vivo” (sin pegarle al API):
+    // aquí filtramos local y SOLO al presionar Enter hacemos fetch.
+    // (evita spam al API)
+    ["search","estatus","categoria"].forEach(id => {
+      document.getElementById(id).addEventListener("input", () => {
+        offset = 0;
+        renderFromCache();
+      });
+    });
+
     els.token.addEventListener("change", () => saveToken());
 
-    // paginación
     els.prevBtn.addEventListener("click", () => {
       const lim = parseInt(els.limit.value, 10) || 50;
       offset = Math.max(offset - lim, 0);
-      loadTickets();
+      renderFromCache();
     });
     els.nextBtn.addEventListener("click", () => {
       const lim = parseInt(els.limit.value, 10) || 50;
       offset = offset + lim;
-      loadTickets();
+      renderFromCache();
     });
 
-    // auto refresh
     els.auto.addEventListener("change", () => {
       if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
       const secs = parseInt(els.auto.value, 10) || 0;
-      if (secs > 0) {
-        autoTimer = setInterval(() => loadTickets(), secs * 1000);
-      }
+      if (secs > 0) autoTimer = setInterval(() => loadTickets(), secs * 1000);
     });
 
     // Toggle filtros
