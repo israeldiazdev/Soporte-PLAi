@@ -250,7 +250,7 @@
 
     table {
       width: 100%;
-      min-width: 1200px; /* ⬅️ más por la columna de imagen */
+      min-width: 1200px;
       border-collapse: collapse;
     }
 
@@ -359,33 +359,25 @@
     .small { font-size: 0.8em; color: #8892b0; margin-top: 4px; }
     .btn-group { display: flex; gap: 8px; }
 
-    /* ===========================
-       ✅ PREVIEW DE IMAGEN + MODAL
-       =========================== */
-    .imgCell {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
+    /* ✅ PREVIEW DE IMAGEN + MODAL */
+    .imgCell { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 
-    .thumbBtn {
+    .thumbLink {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
       border-radius: 10px;
       border: 1px solid rgba(100, 255, 218, 0.25);
       background: rgba(255,255,255,0.05);
-      color: #e0e0e0;
       cursor: pointer;
       transition: all .2s ease;
+      overflow: hidden;
       text-decoration: none;
-      font-weight: 700;
-      font-size: 0.85em;
-      white-space: nowrap;
     }
 
-    .thumbBtn:hover {
+    .thumbLink:hover {
       border-color: rgba(100, 255, 218, 0.55);
       background: rgba(100, 255, 218, 0.08);
       transform: translateY(-1px);
@@ -394,9 +386,8 @@
     .thumb {
       width: 44px;
       height: 44px;
-      border-radius: 10px;
       object-fit: cover;
-      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
       background: rgba(0,0,0,0.25);
     }
 
@@ -437,11 +428,7 @@
       letter-spacing: 0.3px;
     }
 
-    .modalActions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
+    .modalActions { display: flex; gap: 10px; align-items: center; }
 
     .linkBtn {
       padding: 10px 12px;
@@ -635,7 +622,7 @@
             <th style="min-width: 120px;">Estatus</th>
             <th style="min-width: 180px;">Nombre / Email</th>
             <th style="min-width: 260px;">Mensaje del usuario</th>
-            <th style="min-width: 170px;">Adjunto</th> <!-- ✅ NUEVO -->
+            <th style="min-width: 170px;">Adjunto</th>
           </tr>
         </thead>
         <tbody id="tbody">
@@ -711,7 +698,7 @@
       kMedia: document.getElementById("kMedia"),
       kBaja: document.getElementById("kBaja"),
 
-      // ✅ modal
+      // modal
       imgModal: document.getElementById("imgModal"),
       modalImg: document.getElementById("modalImg"),
       modalTitle: document.getElementById("modalTitle"),
@@ -813,15 +800,23 @@
       return q.toString();
     }
 
-    // ✅ Normaliza URL de imagen que venga del API
-    // Espera que en tu API venga como: t.imagen_url (lo que guardaste en n8n)
-    function getImageUrl(t) {
-      const raw = (t && (t.imagen_url || t.image_url || t.adjunto_url || t.url_imagen)) || "";
-      const url = String(raw || "").trim();
-      if (!url) return "";
-      // solo permitimos http/https para evitar cosas raras
-      if (!/^https?:\/\//i.test(url)) return "";
-      return url;
+    // ===========================
+    // ✅ Attachments (0..3)
+    // Espera: t.attachments = [{ url, file_name, mime_type, drive_file_id }, ...]
+    // ===========================
+    function getAttachments(t) {
+      const arr = (t && t.attachments) || [];
+      if (!Array.isArray(arr)) return [];
+
+      // solo http/https + máximo 3
+      return arr
+        .map(a => ({
+          url: String(a?.url || "").trim(),
+          file_name: String(a?.file_name || "archivo").trim(),
+          mime_type: String(a?.mime_type || "").trim(),
+        }))
+        .filter(a => /^https?:\/\//i.test(a.url))
+        .slice(0, 3);
     }
 
     // ===========================
@@ -893,8 +888,8 @@
           els.tbody.innerHTML = `<tr><td colspan="9" class="muted">No hay resultados con esos filtros.</td></tr>`;
         } else {
           els.tbody.innerHTML = tickets.map(t => {
-            const idRaw = (t.ticket_id || "");
-            const id = escapeHtml(idRaw);
+            const ticketIdRaw = (t.ticket_id || "");
+            const id = escapeHtml(ticketIdRaw);
             const fecha = escapeHtml(fmtDate(t.fecha_creacion || t.fecha_actualizacion));
             const prioridad = pillPrioridad(t.prioridad);
             const categoria = escapeHtml(t.categoria || "");
@@ -904,15 +899,22 @@
             const email = escapeHtml(t.email || "");
             const msgUsuario = escapeHtml(t.mensaje || "");
 
-            // ✅ Imagen
-            const imgUrl = getImageUrl(t);
-            const adjuntoCell = imgUrl
+            // ✅ Adjuntos (0..3)
+            const atts = getAttachments(t);
+            const adjuntoCell = atts.length
               ? `
                 <div class="imgCell">
-                  <img class="thumb" src="${imgUrl}" alt="Adjunto ${id}" loading="lazy" referrerpolicy="no-referrer" />
-                  <button class="thumbBtn" type="button" data-img="${imgUrl}" data-title="Adjunto • ${idRaw}">
-                    Ver
-                  </button>
+                  ${atts.map((a, idx) => {
+                    const u = escapeHtml(a.url);
+                    const title = escapeHtml(a.file_name || `Adjunto ${idx+1}`);
+                    // data-* para abrir modal
+                    return `
+                      <a class="thumbLink" href="javascript:void(0)"
+                         data-img="${u}" data-title="${title} • ${escapeHtml(ticketIdRaw)}">
+                        <img class="thumb" src="${u}" alt="${title}" loading="lazy" referrerpolicy="no-referrer" />
+                      </a>
+                    `;
+                  }).join("")}
                 </div>
               `
               : `<span class="muted">—</span>`;
@@ -935,11 +937,11 @@
             `;
           }).join("");
 
-          // ✅ delegación de click para abrir modal
-          els.tbody.querySelectorAll("button[data-img]").forEach(btn => {
-            btn.addEventListener("click", () => {
-              const img = btn.getAttribute("data-img");
-              const title = btn.getAttribute("data-title") || "Adjunto";
+          // ✅ Click delegación: abrir modal (miniaturas)
+          els.tbody.querySelectorAll("[data-img]").forEach(el => {
+            el.addEventListener("click", () => {
+              const img = el.getAttribute("data-img") || "";
+              const title = el.getAttribute("data-title") || "Adjunto";
               if (img) openModal(img, title);
             });
           });
