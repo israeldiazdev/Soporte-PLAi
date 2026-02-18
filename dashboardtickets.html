@@ -387,6 +387,21 @@
       border: 1px solid rgba(255,255,255,0.12);
       background: rgba(0,0,0,0.25);
     }
+
+    .moreBadge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(100,255,218,0.25);
+      background: rgba(255,255,255,0.05);
+      color: #64ffda;
+      font-weight: 800;
+      font-size: 0.8em;
+      white-space: nowrap;
+    }
+
     .modal {
       position: fixed;
       inset: 0;
@@ -449,6 +464,38 @@
       object-fit: contain;
       border-radius: 12px;
       border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(0,0,0,0.25);
+    }
+
+    /* ✅ mini galería dentro del modal (hasta 3) */
+    .modalThumbs{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      padding: 0 16px 16px 16px;
+    }
+    .modalThumbBtn{
+      border: 1px solid rgba(100,255,218,0.25);
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 6px;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+    .modalThumbBtn:hover{
+      border-color: rgba(100,255,218,0.55);
+      transform: translateY(-1px);
+    }
+    .modalThumbBtn.active{
+      border-color: rgba(100,255,218,0.9);
+      box-shadow: 0 0 0 2px rgba(100,255,218,0.25) inset;
+    }
+    .modalThumbImg{
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 10px;
+      display:block;
       background: rgba(0,0,0,0.25);
     }
 
@@ -633,6 +680,9 @@
       <div class="modalBody">
         <img id="modalImg" class="modalImg" alt="Imagen adjunta del ticket" src="">
       </div>
+
+      <!-- ✅ mini galería -->
+      <div class="modalThumbs" id="modalThumbs" style="display:none;"></div>
     </div>
   </div>
 
@@ -650,7 +700,7 @@
     let offset = 0;
     let autoTimer = null;
 
-    // ✅ guardamos lo que venga del API (aunque sean 400)
+    // ✅ guardamos lo que venga del API
     let allTicketsCache = [];
 
     const els = {
@@ -683,6 +733,7 @@
       modalTitle: document.getElementById("modalTitle"),
       openOriginal: document.getElementById("openOriginal"),
       closeModal: document.getElementById("closeModal"),
+      modalThumbs: document.getElementById("modalThumbs"),
     };
 
     els.endpointText.textContent = ENDPOINT;
@@ -753,7 +804,6 @@
 
     function buildQuery() {
       const q = new URLSearchParams();
-      // OJO: seguimos enviando filtros al API (si lo arreglas luego, funcionará server-side)
       const search = els.search.value.trim();
       const prioridad = els.prioridad.value.trim();
       const estatus = els.estatus.value.trim();
@@ -786,8 +836,31 @@
       return [];
     }
 
-    // ✅ URL de imagen (si existe)
-    function getImageUrl(t) {
+    // ===========================
+    // ✅ ADJUNTOS: lee data.attachments (array o string JSON)
+    // El API normalmente manda: attachments: [{ url, file_name, mime_type, drive_file_id, ...}, ...]
+    // ===========================
+    function getAttachments(t) {
+      let a = t?.attachments;
+
+      // si viene como string: "[{...}]"
+      if (typeof a === "string") {
+        try { a = JSON.parse(a); } catch { a = []; }
+      }
+      if (!Array.isArray(a)) return [];
+
+      return a
+        .map(x => ({
+          url: String(x?.url || x?.imagen_url || "").trim(),
+          file_name: String(x?.file_name || x?.name || "").trim(),
+          mime_type: String(x?.mime_type || x?.mimeType || "").trim(),
+          drive_file_id: String(x?.drive_file_id || x?.driveFileId || "").trim(),
+        }))
+        .filter(x => /^https?:\/\//i.test(x.url));
+    }
+
+    // (fallback por si todavía tienes un solo campo en algunos tickets)
+    function getLegacyImageUrl(t) {
       const raw = (t && (t.imagen_url || t.image_url || t.adjunto_url || t.url_imagen)) || "";
       const url = String(raw || "").trim();
       if (!url) return "";
@@ -795,7 +868,7 @@
       return url;
     }
 
-    // ✅ FILTRADO CLIENT-SIDE (arregla “no funcionan filtros” aunque el API mande todo)
+    // ✅ FILTRADO CLIENT-SIDE
     function applyClientFilters(list) {
       const search = els.search.value.trim().toLowerCase();
       const prioridad = els.prioridad.value.trim().toLowerCase();
@@ -810,8 +883,8 @@
         const a = String(t.area_soporte || "").toLowerCase();
 
         if (prioridad && p !== prioridad) return false;
-        if (estatus && !e.includes(estatus)) return false;     // includes para “en revisión”
-        if (categoria && !c.includes(categoria)) return false; // includes para “General”, “Facturación”
+        if (estatus && !e.includes(estatus)) return false;
+        if (categoria && !c.includes(categoria)) return false;
         if (area && a !== area) return false;
 
         if (search) {
@@ -839,10 +912,40 @@
     // ===========================
     // Modal
     // ===========================
-    function openModal(url, title) {
+    function openModal(url, title, allUrls = []) {
       els.modalTitle.textContent = title || "Adjunto";
       els.modalImg.src = url;
       els.openOriginal.href = url;
+
+      // mini galería
+      if (Array.isArray(allUrls) && allUrls.length > 1) {
+        els.modalThumbs.style.display = "flex";
+        els.modalThumbs.innerHTML = allUrls.slice(0, 3).map((u, i) => {
+          const active = (u === url) ? "active" : "";
+          return `
+            <button class="modalThumbBtn ${active}" type="button" data-u="${escapeHtml(u)}" title="Ver adjunto ${i+1}">
+              <img class="modalThumbImg" src="${escapeHtml(u)}" alt="Adjunto ${i+1}" loading="lazy" referrerpolicy="no-referrer" />
+            </button>
+          `;
+        }).join("");
+
+        els.modalThumbs.querySelectorAll("button[data-u]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const u = btn.getAttribute("data-u");
+            if (!u) return;
+            // marca active
+            els.modalThumbs.querySelectorAll(".modalThumbBtn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            // cambia imagen principal
+            els.modalImg.src = u;
+            els.openOriginal.href = u;
+          });
+        });
+      } else {
+        els.modalThumbs.style.display = "none";
+        els.modalThumbs.innerHTML = "";
+      }
+
       els.imgModal.classList.add("show");
       els.imgModal.setAttribute("aria-hidden", "false");
     }
@@ -852,6 +955,8 @@
       els.imgModal.setAttribute("aria-hidden", "true");
       els.modalImg.src = "";
       els.openOriginal.href = "#";
+      els.modalThumbs.style.display = "none";
+      els.modalThumbs.innerHTML = "";
     }
 
     els.closeModal.addEventListener("click", closeModal);
@@ -859,7 +964,7 @@
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
     // ===========================
-    // Render (usa CACHE + filtros/paginación client-side)
+    // Render (CACHE + filtros/paginación client-side)
     // ===========================
     function renderFromCache() {
       const lim = parseInt(els.limit.value, 10) || 50;
@@ -867,13 +972,12 @@
       let filtered = applyClientFilters(allTicketsCache);
       filtered = sortClient(filtered);
 
-      // si offset quedó fuera (por ejemplo al cambiar filtros), lo corregimos
       if (offset >= filtered.length) offset = 0;
       els.offsetText.textContent = String(offset);
 
       const page = filtered.slice(offset, offset + lim);
 
-      // KPIs (de la página actual)
+      // KPIs (página actual)
       const alta = page.filter(t => (t.prioridad || "").toLowerCase() === "alta").length;
       const media = page.filter(t => (t.prioridad || "").toLowerCase() === "media").length;
       const baja = page.filter(t => (t.prioridad || "").toLowerCase() === "baja").length;
@@ -899,15 +1003,30 @@
           const email = escapeHtml(t.email || "");
           const msgUsuario = escapeHtml(t.mensaje || "");
 
-          const imgUrl = getImageUrl(t);
-          const adjuntoCell = imgUrl
-            ? `
+          // ✅ Adjuntos (hasta 3)
+          const atts = getAttachments(t);
+          const legacy = (!atts.length) ? getLegacyImageUrl(t) : "";
+          const urls = atts.length ? atts.map(a => a.url).slice(0, 3) : (legacy ? [legacy] : []);
+
+          let adjuntoCell = `<span class="muted">—</span>`;
+          if (urls.length) {
+            const firstUrl = urls[0];
+            const firstName = (atts[0]?.file_name || ("Adjunto • " + idRaw));
+            const more = urls.length > 1 ? `<span class="moreBadge">+${urls.length-1}</span>` : ``;
+
+            adjuntoCell = `
               <div class="imgCell">
-                <img class="thumb" src="${imgUrl}" alt="Adjunto ${id}" loading="lazy" referrerpolicy="no-referrer" />
-                <button class="thumbBtn" type="button" data-img="${imgUrl}" data-title="Adjunto • ${escapeHtml(idRaw)}">Ver</button>
+                <img class="thumb" src="${escapeHtml(firstUrl)}" alt="Adjunto ${id}" loading="lazy" referrerpolicy="no-referrer" />
+                <button class="thumbBtn" type="button"
+                        data-img="${escapeHtml(firstUrl)}"
+                        data-title="${escapeHtml(firstName)}"
+                        data-all="${escapeHtml(JSON.stringify(urls))}">
+                  Ver
+                </button>
+                ${more}
               </div>
-            `
-            : `<span class="muted">—</span>`;
+            `;
+          }
 
           return `
             <tr>
@@ -932,7 +1051,9 @@
           btn.addEventListener("click", () => {
             const img = btn.getAttribute("data-img");
             const title = btn.getAttribute("data-title") || "Adjunto";
-            if (img) openModal(img, title);
+            let all = [];
+            try { all = JSON.parse(btn.getAttribute("data-all") || "[]"); } catch { all = []; }
+            if (img) openModal(img, title, all);
           });
         });
       }
@@ -968,20 +1089,12 @@
           const msg = data?.error || data?.message || ("HTTP " + res.status);
           throw new Error(msg);
         }
-        if (!data || data.ok !== true) {
-          // tolerante: si tu Unwrap/Build cambia, aun así intentamos sacar tickets
-          // pero dejamos aviso
-          const maybe = extractTickets(data);
-          if (!maybe.length) throw new Error("Respuesta inesperada del API.");
-        }
 
         // ✅ actualiza cache
         allTicketsCache = extractTickets(data);
         if (!Array.isArray(allTicketsCache)) allTicketsCache = [];
 
-        // ✅ render desde cache (filtros/paginación client)
         renderFromCache();
-
         showOk("✅ Actualizado correctamente");
       } catch (err) {
         showError("❌ Error: " + (err?.message || String(err)));
@@ -1007,18 +1120,16 @@
       els.area.value = "";
       els.order.value = "desc";
       offset = 0;
-      renderFromCache(); // refleja limpieza instantánea
-      loadTickets();     // y refresca desde API
+      renderFromCache();
+      loadTickets();
     });
 
-    // Enter en inputs
     ["search","estatus","categoria"].forEach(id => {
       document.getElementById(id).addEventListener("keydown", (e) => {
         if (e.key === "Enter") { offset = 0; loadTickets(); }
       });
     });
 
-    // Cambios en filtros -> reset offset y render inmediato (y luego fetch)
     ["prioridad","order","limit","area"].forEach(id => {
       document.getElementById(id).addEventListener("change", () => {
         offset = 0;
@@ -1027,9 +1138,7 @@
       });
     });
 
-    // input typing: si quieres que filtre “en vivo” (sin pegarle al API):
-    // aquí filtramos local y SOLO al presionar Enter hacemos fetch.
-    // (evita spam al API)
+    // filtro “en vivo” (sin pegar al API)
     ["search","estatus","categoria"].forEach(id => {
       document.getElementById(id).addEventListener("input", () => {
         offset = 0;
