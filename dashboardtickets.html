@@ -681,7 +681,6 @@
         <img id="modalImg" class="modalImg" alt="Imagen adjunta del ticket" src="">
       </div>
 
-      <!-- ✅ mini galería -->
       <div class="modalThumbs" id="modalThumbs" style="display:none;"></div>
     </div>
   </div>
@@ -699,9 +698,6 @@
     // ===========================
     let offset = 0;
     let autoTimer = null;
-
-    // ✅ guardamos lo que venga del API
-    let allTicketsCache = [];
 
     const els = {
       endpointText: document.getElementById("endpointText"),
@@ -739,7 +735,7 @@
     els.endpointText.textContent = ENDPOINT;
 
     // ===========================
-    // Helpers
+    // Helpers UI
     // ===========================
     function showError(text) {
       els.err.style.display = "block";
@@ -802,8 +798,10 @@
       els.token.value = t;
     }
 
+    // ✅ Query para el API (paginación REAL server-side)
     function buildQuery() {
       const q = new URLSearchParams();
+
       const search = els.search.value.trim();
       const prioridad = els.prioridad.value.trim();
       const estatus = els.estatus.value.trim();
@@ -819,8 +817,10 @@
       if (categoria) q.set("categoria", categoria);
       if (area) q.set("area", area);
       if (order) q.set("order", order);
-      if (limit) q.set("limit", limit);
+
+      q.set("limit", limit);
       q.set("offset", String(offset));
+
       if (token) q.set("token", token);
 
       return q.toString();
@@ -837,13 +837,11 @@
     }
 
     // ===========================
-    // ✅ ADJUNTOS: lee data.attachments (array o string JSON)
-    // El API normalmente manda: attachments: [{ url, file_name, mime_type, drive_file_id, ...}, ...]
+    // ✅ ADJUNTOS: lee t.attachments (array o string JSON)
     // ===========================
     function getAttachments(t) {
       let a = t?.attachments;
 
-      // si viene como string: "[{...}]"
       if (typeof a === "string") {
         try { a = JSON.parse(a); } catch { a = []; }
       }
@@ -851,7 +849,7 @@
 
       return a
         .map(x => ({
-          url: String(x?.url || x?.imagen_url || "").trim(),
+          url: String(x?.url || x?.imagen_url || x?.image_url || "").trim(),
           file_name: String(x?.file_name || x?.name || "").trim(),
           mime_type: String(x?.mime_type || x?.mimeType || "").trim(),
           drive_file_id: String(x?.drive_file_id || x?.driveFileId || "").trim(),
@@ -859,54 +857,13 @@
         .filter(x => /^https?:\/\//i.test(x.url));
     }
 
-    // (fallback por si todavía tienes un solo campo en algunos tickets)
+    // fallback por si todavía tienes un solo campo en algunos tickets
     function getLegacyImageUrl(t) {
       const raw = (t && (t.imagen_url || t.image_url || t.adjunto_url || t.url_imagen)) || "";
       const url = String(raw || "").trim();
       if (!url) return "";
       if (!/^https?:\/\//i.test(url)) return "";
       return url;
-    }
-
-    // ✅ FILTRADO CLIENT-SIDE
-    function applyClientFilters(list) {
-      const search = els.search.value.trim().toLowerCase();
-      const prioridad = els.prioridad.value.trim().toLowerCase();
-      const estatus = els.estatus.value.trim().toLowerCase();
-      const categoria = els.categoria.value.trim().toLowerCase();
-      const area = els.area.value.trim().toLowerCase();
-
-      return (list || []).filter(t => {
-        const p = String(t.prioridad || "").toLowerCase();
-        const e = String(t.estatus || "").toLowerCase();
-        const c = String(t.categoria || "").toLowerCase();
-        const a = String(t.area_soporte || "").toLowerCase();
-
-        if (prioridad && p !== prioridad) return false;
-        if (estatus && !e.includes(estatus)) return false;
-        if (categoria && !c.includes(categoria)) return false;
-        if (area && a !== area) return false;
-
-        if (search) {
-          const blob = [
-            t.ticket_id, t.nombre, t.email, t.mensaje
-          ].map(x => String(x || "").toLowerCase()).join(" ");
-          if (!blob.includes(search)) return false;
-        }
-
-        return true;
-      });
-    }
-
-    // ✅ orden client-side (si el API ignora order)
-    function sortClient(list) {
-      const dir = (els.order.value || "desc").toLowerCase();
-      const factor = dir === "asc" ? 1 : -1;
-      return [...(list || [])].sort((a,b) => {
-        const da = new Date(a.fecha_creacion || a.fecha_actualizacion || 0).getTime();
-        const db = new Date(b.fecha_creacion || b.fecha_actualizacion || 0).getTime();
-        return (da - db) * factor;
-      });
     }
 
     // ===========================
@@ -917,7 +874,6 @@
       els.modalImg.src = url;
       els.openOriginal.href = url;
 
-      // mini galería
       if (Array.isArray(allUrls) && allUrls.length > 1) {
         els.modalThumbs.style.display = "flex";
         els.modalThumbs.innerHTML = allUrls.slice(0, 3).map((u, i) => {
@@ -933,10 +889,8 @@
           btn.addEventListener("click", () => {
             const u = btn.getAttribute("data-u");
             if (!u) return;
-            // marca active
             els.modalThumbs.querySelectorAll(".modalThumbBtn").forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
-            // cambia imagen principal
             els.modalImg.src = u;
             els.openOriginal.href = u;
           });
@@ -964,31 +918,25 @@
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
     // ===========================
-    // Render (CACHE + filtros/paginación client-side)
+    // Render (solo página actual)
+    // ✅ FIX: paginación REAL por servidor
     // ===========================
-    function renderFromCache() {
+    function renderPage(page) {
       const lim = parseInt(els.limit.value, 10) || 50;
 
-      let filtered = applyClientFilters(allTicketsCache);
-      filtered = sortClient(filtered);
-
-      if (offset >= filtered.length) offset = 0;
       els.offsetText.textContent = String(offset);
 
-      const page = filtered.slice(offset, offset + lim);
-
       // KPIs (página actual)
-      const alta = page.filter(t => (t.prioridad || "").toLowerCase() === "alta").length;
+      const alta  = page.filter(t => (t.prioridad || "").toLowerCase() === "alta").length;
       const media = page.filter(t => (t.prioridad || "").toLowerCase() === "media").length;
-      const baja = page.filter(t => (t.prioridad || "").toLowerCase() === "baja").length;
+      const baja  = page.filter(t => (t.prioridad || "").toLowerCase() === "baja").length;
 
       els.kCount.textContent = String(page.length);
       els.kAlta.textContent = String(alta);
       els.kMedia.textContent = String(media);
       els.kBaja.textContent = String(baja);
 
-      // Tabla
-      if (page.length === 0) {
+      if (!page.length) {
         els.tbody.innerHTML = `<tr><td colspan="9" class="muted">No hay resultados con esos filtros.</td></tr>`;
       } else {
         els.tbody.innerHTML = page.map(t => {
@@ -1003,7 +951,6 @@
           const email = escapeHtml(t.email || "");
           const msgUsuario = escapeHtml(t.mensaje || "");
 
-          // ✅ Adjuntos (hasta 3)
           const atts = getAttachments(t);
           const legacy = (!atts.length) ? getLegacyImageUrl(t) : "";
           const urls = atts.length ? atts.map(a => a.url).slice(0, 3) : (legacy ? [legacy] : []);
@@ -1058,19 +1005,20 @@
         });
       }
 
-      const total = filtered.length;
-      const from = total ? (offset + 1) : 0;
-      const to = total ? Math.min(offset + page.length, total) : 0;
-      els.rangeText.textContent = total
-        ? `Mostrando ${from}–${to} de ${total} (límite ${lim})`
+      // rango (sin total, mostramos rango de esta página)
+      const from = page.length ? offset + 1 : 0;
+      const to = page.length ? offset + page.length : 0;
+      els.rangeText.textContent = page.length
+        ? `Mostrando ${from}–${to} (límite ${lim})`
         : `Mostrando 0 resultados`;
 
+      // ✅ FIX: next se habilita solo si el API devolvió "lim" registros
       els.prevBtn.disabled = offset === 0;
-      els.nextBtn.disabled = (offset + lim) >= total;
+      els.nextBtn.disabled = page.length < lim;
     }
 
     // ===========================
-    // Fetch (solo actualiza cache)
+    // Fetch (paginación server-side)
     // ===========================
     async function loadTickets() {
       clearMessages();
@@ -1090,17 +1038,16 @@
           throw new Error(msg);
         }
 
-        // ✅ actualiza cache
-        allTicketsCache = extractTickets(data);
-        if (!Array.isArray(allTicketsCache)) allTicketsCache = [];
+        const tickets = extractTickets(data);
 
-        renderFromCache();
+        renderPage(Array.isArray(tickets) ? tickets : []);
         showOk("✅ Actualizado correctamente");
       } catch (err) {
         showError("❌ Error: " + (err?.message || String(err)));
-        allTicketsCache = [];
         els.tbody.innerHTML = `<tr><td colspan="9" class="muted">No se pudieron cargar tickets.</td></tr>`;
         els.rangeText.textContent = "—";
+        els.prevBtn.disabled = true;
+        els.nextBtn.disabled = true;
       } finally {
         els.refreshBtn.disabled = false;
         els.msg.textContent = "";
@@ -1120,45 +1067,39 @@
       els.area.value = "";
       els.order.value = "desc";
       offset = 0;
-      renderFromCache();
       loadTickets();
     });
 
+    // Enter en inputs
     ["search","estatus","categoria"].forEach(id => {
       document.getElementById(id).addEventListener("keydown", (e) => {
         if (e.key === "Enter") { offset = 0; loadTickets(); }
       });
     });
 
+    // Cambios en filtros -> reset offset y fetch
     ["prioridad","order","limit","area"].forEach(id => {
       document.getElementById(id).addEventListener("change", () => {
         offset = 0;
-        renderFromCache();
         loadTickets();
-      });
-    });
-
-    // filtro “en vivo” (sin pegar al API)
-    ["search","estatus","categoria"].forEach(id => {
-      document.getElementById(id).addEventListener("input", () => {
-        offset = 0;
-        renderFromCache();
       });
     });
 
     els.token.addEventListener("change", () => saveToken());
 
+    // ✅ FIX: paginación llama al API con offset actualizado
     els.prevBtn.addEventListener("click", () => {
       const lim = parseInt(els.limit.value, 10) || 50;
       offset = Math.max(offset - lim, 0);
-      renderFromCache();
+      loadTickets();
     });
     els.nextBtn.addEventListener("click", () => {
       const lim = parseInt(els.limit.value, 10) || 50;
       offset = offset + lim;
-      renderFromCache();
+      loadTickets();
     });
 
+    // auto refresh
     els.auto.addEventListener("change", () => {
       if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
       const secs = parseInt(els.auto.value, 10) || 0;
@@ -1177,9 +1118,7 @@
       toggleText.textContent = filtersPanel.classList.contains("show") ? "Ocultar filtros" : "Mostrar filtros";
     });
 
-    // ===========================
     // Init
-    // ===========================
     loadToken();
     loadTickets();
   </script>
