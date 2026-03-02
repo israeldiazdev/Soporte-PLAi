@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>PLAi · Acceso</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:        #050810;
+      --surface:   #010102;
+      --border:    rgba(255,255,255,0.07);
+      --accent:    #00d4ff;
+      --accent2:   #7b2ff7;
+      --text:      #e8eaf0;
+      --muted:     #5a6080;
+      --font-head: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── FONDO ANIMADO ── */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove {
+      0%   { background-position: 0 0; }
+      100% { background-position: 60px 60px; }
+    }
+
+    .orb {
+      position: fixed; border-radius: 50%; filter: blur(80px);
+      z-index: 0; pointer-events: none;
+      animation: orbFloat 8s ease-in-out infinite;
+    }
+    .orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(0,212,255,0.12), transparent 70%);
+      top: -150px; left: -150px;
+      animation-duration: 10s;
+    }
+    .orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(123,47,247,0.15), transparent 70%);
+      bottom: -100px; right: -100px;
+      animation-duration: 13s; animation-delay: -4s;
+    }
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0,0); }
+      33%  { transform: translate(30px,-20px); }
+      66%  { transform: translate(-20px,30px); }
+    }
+
+    /* ── CONTENEDOR ── */
+    .card {
+      position: relative; z-index: 10;
+      width: min(420px, 92vw);
+      background: rgba(12,16,32,0.85);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px 40px;
+      backdrop-filter: blur(24px);
+      box-shadow:
+        0 0 0 1px rgba(0,212,255,0.05),
+        0 40px 80px rgba(0,0,0,0.6),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+      animation: cardIn .6s cubic-bezier(.22,1,.36,1) both;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(24px) scale(.97); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+
+    /* borde superior brillante */
+    .card::before {
+      content: '';
+      position: absolute; top: 0; left: 10%; right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+      border-radius: 1px;
+    }
+
+    /* ── LOGO / MARCA ── */
+    .brand {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 36px;
+    }
+    .brand-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3em;
+      box-shadow: 0 0 20px rgba(0,212,255,0.35);
+    }
+    .brand-name {
+      font-family: var(--font-head);
+      font-weight: 800;
+      font-size: 1.5em;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .brand-sub {
+      font-size: 0.75em;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    /* ── TEXTOS ── */
+    .card h1 {
+      font-family: var(--font-head);
+      font-size: 1.9em;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .card p {
+      color: var(--muted);
+      font-size: 0.95em;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    /* ── BOTÓN SSO ── */
+    .btn-sso {
+      width: 100%;
+      padding: 16px 24px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-head);
+      font-size: 1em;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      position: relative;
+      overflow: hidden;
+      transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 4px 24px rgba(0,212,255,0.25);
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+    }
+    .btn-sso::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background .2s;
+    }
+    .btn-sso:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,212,255,0.4); }
+    .btn-sso:hover::before { background: rgba(255,255,255,0.07); }
+    .btn-sso:active { transform: translateY(0); }
+
+    .btn-sso .key-icon {
+      width: 20px; height: 20px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9em;
+      flex-shrink: 0;
+    }
+
+    /* spinner dentro del botón */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── DIVIDER ── */
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 28px 0;
+      color: var(--muted); font-size: 0.8em;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1;
+      height: 1px; background: var(--border);
+    }
+
+    /* ── INFO SEGURIDAD ── */
+    .security-note {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 14px 16px;
+      border: 1px solid rgba(0,212,255,0.12);
+      border-radius: 10px;
+      background: rgba(0,212,255,0.04);
+      font-size: 0.82em;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .security-note .shield { color: var(--accent); font-size: 1.1em; flex-shrink: 0; }
+
+    /* ── FOOTER ── */
+    .card-footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 0.78em;
+      color: var(--muted);
+    }
+    .card-footer a { color: var(--accent); text-decoration: none; }
+    .card-footer a:hover { text-decoration: underline; }
+
+    /* ── TOAST DE ERROR ── */
+    .toast {
+      position: fixed; top: 24px; right: 24px; z-index: 999;
+      padding: 14px 20px;
+      background: rgba(255,71,87,0.15);
+      border: 1px solid rgba(255,71,87,0.4);
+      border-radius: 10px;
+      color: #ff4757;
+      font-size: 0.9em;
+      font-weight: 600;
+      display: none;
+      animation: toastIn .3s ease both;
+    }
+    @keyframes toastIn {
+      from { opacity:0; transform: translateX(20px); }
+      to   { opacity:1; transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="toast" id="toast">⚠ Error al conectar con el servidor de autenticación.</div>
+
+<div class="card">
+  <div class="brand">
+    <div class="brand-icon">📊</div>
+    <div>
+      <div class="brand-name">PLAi</div>
+      <div class="brand-sub">Soporte Inteligente</div>
+    </div>
+  </div>
+
+  <h1>Bienvenido de vuelta</h1>
+  <p>Accede a tu portal de tickets con tu correo de PLAi.</p>
+
+  <button class="btn-sso" id="loginBtn" onclick="doLogin()">
+    <div class="key-icon">🔑</div>
+    <span id="btnText">Iniciar sesión</span>
+    <div class="spinner" id="spinner"></div>
+  </button>
+
+  <div class="divider">autenticación segura</div>
+
+  <div class="security-note">
+    <span class="shield">🛡</span>
+    <span>Tu sesión está protegida por Keycloak SSO. Serás redirigido al portal de autenticación de PLAi.</span>
+  </div>
+</div>
+
+<script>
+  // =========================================================
+  // CONFIGURACIÓN KEYCLOAK — ajusta estos valores
+  // =========================================================
+  const KC_CONFIG = {
+    url:      'https://keycloak.plai.mx',   // URL base de tu Keycloak
+    realm:    'plai',                        // nombre del realm
+    clientId: 'dashboard-tickets',           // client ID configurado en Keycloak
+  };
+
+  // URLs de redirección por rol
+  const REDIRECT = {
+    admin: 'dashboardtickets.html',
+    user:  'mis-tickets.html',
+  };
+
+  // =========================================================
+  // PKCE helper
+  // =========================================================
+  function b64url(buf) {
+    return btoa(String.fromCharCode(...new Uint8Array(buf)))
+      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  }
+  async function sha256(plain) {
+    const enc = new TextEncoder().encode(plain);
+    return crypto.subtle.digest('SHA-256', enc);
+  }
+  function rnd(n = 64) {
+    const arr = new Uint8Array(n);
+    crypto.getRandomValues(arr);
+    return b64url(arr);
+  }
+
+  // =========================================================
+  // Manejo del callback OAuth (code exchange)
+  // =========================================================
+  async function handleCallback() {
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    if (!code) return false;
+
+    const savedState = sessionStorage.getItem('kc_state');
+    const verifier   = sessionStorage.getItem('kc_verifier');
+    if (state !== savedState) { showToast('Estado inválido. Intenta de nuevo.'); return true; }
+
+    // Limpiar URL
+    history.replaceState({}, '', location.pathname);
+
+    const tokenUrl = `${KC_CONFIG.url}/realms/${KC_CONFIG.realm}/protocol/openid-connect/token`;
+    const body = new URLSearchParams({
+      grant_type:    'authorization_code',
+      client_id:     KC_CONFIG.clientId,
+      code,
+      redirect_uri:  location.origin + location.pathname,
+      code_verifier: verifier,
+    });
+
+    try {
+      const res  = await fetch(tokenUrl, { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error_description || 'Token error');
+
+      sessionStorage.setItem('kc_access_token',  data.access_token);
+      sessionStorage.setItem('kc_refresh_token', data.refresh_token || '');
+      sessionStorage.setItem('kc_id_token',      data.id_token || '');
+
+      // Decodificar roles del token
+      const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+      const roles   = payload?.realm_access?.roles || [];
+      const email   = payload?.email || payload?.preferred_username || '';
+
+      sessionStorage.setItem('kc_email', email);
+      sessionStorage.setItem('kc_name',  payload?.name || email);
+      sessionStorage.setItem('kc_roles', JSON.stringify(roles));
+
+      const isAdmin = roles.includes('admin') || roles.includes('dashboard-admin');
+      location.href = isAdmin ? REDIRECT.admin : REDIRECT.user;
+    } catch (e) {
+      showToast('Error al obtener el token: ' + e.message);
+    }
+    return true;
+  }
+
+  // =========================================================
+  // Iniciar login con PKCE
+  // =========================================================
+  async function doLogin() {
+    const btn     = document.getElementById('loginBtn');
+    const txt     = document.getElementById('btnText');
+    const spinner = document.getElementById('spinner');
+
+    btn.disabled = true;
+    txt.textContent = 'Redirigiendo…';
+    spinner.style.display = 'block';
+
+    const verifier  = rnd();
+    const state     = rnd(32);
+    const challenge = b64url(await sha256(verifier));
+
+    sessionStorage.setItem('kc_verifier', verifier);
+    sessionStorage.setItem('kc_state',    state);
+
+    const authUrl = new URL(`${KC_CONFIG.url}/realms/${KC_CONFIG.realm}/protocol/openid-connect/auth`);
+    authUrl.searchParams.set('client_id',             KC_CONFIG.clientId);
+    authUrl.searchParams.set('redirect_uri',          location.origin + location.pathname);
+    authUrl.searchParams.set('response_type',         'code');
+    authUrl.searchParams.set('scope',                 'openid profile email');
+    authUrl.searchParams.set('state',                 state);
+    authUrl.searchParams.set('code_challenge',        challenge);
+    authUrl.searchParams.set('code_challenge_method', 'S256');
+
+    location.href = authUrl.toString();
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 5000);
+  }
+
+  // =========================================================
+  // Si ya hay sesión activa → redirigir
+  // =========================================================
+  (async () => {
+    const isCallback = await handleCallback();
+    if (isCallback) return;
+
+    const token = sessionStorage.getItem('kc_access_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp * 1000 > Date.now()) {
+          const roles   = JSON.parse(sessionStorage.getItem('kc_roles') || '[]');
+          const isAdmin = roles.includes('admin') || roles.includes('dashboard-admin');
+          location.href = isAdmin ? REDIRECT.admin : REDIRECT.user;
+        }
+      } catch {}
+    }
+  })();
+</script>
+</body>
+</html>
