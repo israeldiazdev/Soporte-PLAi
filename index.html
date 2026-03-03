@@ -390,9 +390,9 @@
         </div>
 
         <div style="margin-bottom:20px;text-align:center;">
-          <a href="login.html" class="btn-tickets" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:rgba(0,212,255,0.10);border:1px solid rgba(0,212,255,0.35);border-radius:10px;color:#00d4ff;font-weight:700;font-size:0.95em;text-decoration:none;transition:all .2s ease;" onmouseover="this.style.background='rgba(0,212,255,0.22)'" onmouseout="this.style.background='rgba(0,212,255,0.10)'">
+          <button type="button" class="btn-tickets" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:rgba(0,212,255,0.10);border:1px solid rgba(0,212,255,0.35);border-radius:10px;color:#00d4ff;font-weight:700;font-size:0.95em;text-decoration:none;transition:all .2s ease;cursor:pointer;" onclick="startKeycloakLogin()" onmouseover="this.style.background='rgba(0,212,255,0.22)'" onmouseout="this.style.background='rgba(0,212,255,0.10)'">
             🎫 Ver mis tickets
-          </a>
+          </button>
         </div>
 
         <div id="info-message" style="display:none;"></div>
@@ -482,6 +482,57 @@
   </footer>
 
   <script>
+    // ─────────────────────────────────────────
+    // KEYCLOAK AUTHENTICATION - Shared Logic
+    // ─────────────────────────────────────────
+    const KC_CONFIG = {
+      url:      '***',
+      realm:    '***',
+      clientId: '****',
+    };
+
+    const KC_REDIRECT = {
+      admin: 'dashboardtickets.html',
+      user:  'mis-tickets.html',
+    };
+
+    // PKCE helpers
+    const kc_b64url = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+    const kc_sha256 = plain => crypto.subtle.digest('SHA-256', new TextEncoder().encode(plain));
+    const kc_rnd = (n=64) => { const a=new Uint8Array(n); crypto.getRandomValues(a); return kc_b64url(a); };
+
+    // Check if user is admin
+    function kc_checkIsAdmin(payload) {
+      const clientRoles = payload?.resource_access?.[KC_CONFIG.clientId]?.roles || [];
+      const realmRoles  = payload?.realm_access?.roles || [];
+      const all = [...clientRoles, ...realmRoles].map(r => r.toLowerCase());
+      return all.includes('admin');
+    }
+
+    // Start Keycloak login flow
+    async function startKeycloakLogin() {
+      const verifier  = kc_rnd();
+      const state     = kc_rnd(32);
+      const challenge = kc_b64url(await kc_sha256(verifier));
+
+      sessionStorage.setItem('kc_verifier', verifier);
+      sessionStorage.setItem('kc_state',    state);
+
+      const url = new URL(`${KC_CONFIG.url}/realms/${KC_CONFIG.realm}/protocol/openid-connect/auth`);
+      url.searchParams.set('client_id',             KC_CONFIG.clientId);
+      url.searchParams.set('redirect_uri',          location.origin + location.pathname);
+      url.searchParams.set('response_type',         'code');
+      url.searchParams.set('scope',                 'openid profile email roles');
+      url.searchParams.set('state',                 state);
+      url.searchParams.set('code_challenge',        challenge);
+      url.searchParams.set('code_challenge_method', 'S256');
+
+      location.href = url.toString();
+    }
+
+    // ─────────────────────────────────────────
+    // TICKET SUPPORT FORM
+    // ─────────────────────────────────────────
     const form = document.getElementById('soporte-form');
     const modalOverlay = document.getElementById('modal-overlay');
     const modalBody = document.getElementById('modal-body');
