@@ -46,6 +46,15 @@
       padding-top: 20px;
     }
 
+    .header-logo {
+      height: 70px;
+      object-fit: contain;
+      margin-bottom: 20px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
     h1 {
       font-size: 2.5em;
       background: linear-gradient(135deg, #00d4ff 0%, #7b2ff7 100%);
@@ -54,10 +63,32 @@
       background-clip: text;
       margin-bottom: 10px;
       font-weight: 700;
-      text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
     }
 
-    .subtitle { color: #8892b0; font-size: 1.1em; }
+    .subtitle { color: #8892b0; font-size: 1.1em; margin-bottom: 18px; }
+
+    /* Botón ver mis tickets */
+    .btn-tickets {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: rgba(0,212,255,0.10);
+      border: 1px solid rgba(0,212,255,0.35);
+      border-radius: 10px;
+      color: #00d4ff;
+      font-weight: 700;
+      font-size: 0.95em;
+      text-decoration: none;
+      transition: all .2s ease;
+      margin-top: 4px;
+    }
+    .btn-tickets:hover {
+      background: rgba(0,212,255,0.22);
+      border-color: rgba(0,212,255,0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,212,255,0.2);
+    }
 
     .card {
       background: rgba(255, 255, 255, 0.03);
@@ -120,9 +151,7 @@
       margin-bottom: 20px;
     }
 
-    .form-group {
-      margin-bottom: 20px;
-    }
+    .form-group { margin-bottom: 20px; }
 
     label {
       display: block;
@@ -197,12 +226,7 @@
 
     .loading { display: inline-block; animation: pulse 1.5s ease-in-out infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-    @keyframes loading {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
-
+    @keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -226,9 +250,6 @@
       font-size: 0.95em;
     }
 
-    /* =========================
-       Adjuntos (select + drag&drop)
-       ========================= */
     .attachments-wrap {
       padding: 14px;
       background: rgba(255, 255, 255, 0.03);
@@ -252,19 +273,8 @@
       flex-wrap: wrap;
     }
 
-    .attachments-hint {
-      color: #8892b0;
-      font-size: 0.9em;
-      line-height: 1.4;
-      flex: 1;
-      min-width: 220px;
-    }
-
-    .attachments-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
+    .attachments-hint { color: #8892b0; font-size: 0.9em; line-height: 1.4; flex: 1; min-width: 220px; }
+    .attachments-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
     .attachments-btn {
       width: auto;
@@ -315,12 +325,7 @@
       min-height: 110px;
     }
 
-    .thumb img {
-      width: 100%;
-      height: 110px;
-      object-fit: cover;
-      display: block;
-    }
+    .thumb img { width: 100%; height: 110px; object-fit: cover; display: block; }
 
     .thumb-meta {
       padding: 8px 10px;
@@ -350,17 +355,13 @@
       h1 { font-size: 2em; }
       .card { padding: 25px; }
       .form-row { grid-template-columns: 1fr; gap: 0; }
-      #modal-content {
-        margin: 20px;
-        padding: 25px;
-        max-height: 90vh;
-      }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
+      <img src="Imagenes/logo.png" alt="PLAi Logo" class="header-logo" />
       <h1>🤖 Soporte PLAi</h1>
       <p class="subtitle">Sistema inteligente de mesa de ayuda</p>
     </div>
@@ -385,6 +386,12 @@
           </div>
         </div>
 
+        <div style="margin-bottom:20px;text-align:center;">
+          <a href="login.html" class="btn-tickets" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:rgba(0,212,255,0.10);border:1px solid rgba(0,212,255,0.35);border-radius:10px;color:#00d4ff;font-weight:700;font-size:0.95em;text-decoration:none;transition:all .2s ease;" onmouseover="this.style.background='rgba(0,212,255,0.22)'" onmouseout="this.style.background='rgba(0,212,255,0.10)'">
+            🎫 Ver mis tickets
+          </a>
+        </div>
+
         <div id="info-message" style="display:none;"></div>
 
         <div id="email-section" style="display:none;">
@@ -392,7 +399,6 @@
             <label>Correo electrónico</label>
             <input type="email" id="email" name="email" placeholder="tu@email.com" />
           </div>
-
           <div id="verify-section">
             <button type="button" id="verify-btn" class="verify-btn">Verificar correo</button>
           </div>
@@ -432,36 +438,23 @@
             <textarea id="mensaje" name="mensaje" rows="5" placeholder="Describe tu consulta o problema..." required></textarea>
           </div>
 
-          <!-- Adjuntar capturas (opcional) -->
           <div class="form-group">
             <label>Adjuntar capturas (opcional)</label>
-
             <div id="attachments-wrap" class="attachments-wrap">
               <div class="attachments-top">
                 <div class="attachments-hint">
                   <br/>
                   <strong></strong> • Máx <strong>3</strong> archivos • <strong>5MB</strong> c/u
                 </div>
-
                 <div class="attachments-actions">
                   <button type="button" id="pick-images" class="attachments-btn">Elegir imágenes</button>
                   <button type="button" id="clear-images" class="attachments-btn secondary">Limpiar</button>
                 </div>
               </div>
-
               <div id="dropzone" class="dropzone" role="button" tabindex="0">
                 Suelta tus imágenes aquí o <strong>haz clic</strong> para seleccionarlas
               </div>
-
-              <input
-                id="imagenes"
-                name="imagenes"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                multiple
-                style="display:none;"
-              />
-
+              <input id="imagenes" name="imagenes" type="file" accept="image/png,image/jpeg,image/webp" multiple style="display:none;" />
               <div id="attachments-error" class="error-message" style="display:none; margin-top:10px;"></div>
               <div id="attachments-list" class="attachments-list" style="display:none;"></div>
             </div>
@@ -478,7 +471,12 @@
         <div id="modal-body"></div>
       </div>
     </div>
+
   </div>
+
+  <footer style="text-align:center;padding:24px 20px;color:rgba(255,255,255,0.25);font-size:0.82em;position:relative;z-index:1;border-top:1px solid rgba(255,255,255,0.06);margin-top:40px;">
+    ©️ 2026 PLAi. Todos los derechos reservados.
+  </footer>
 
   <script>
     const form = document.getElementById('soporte-form');
@@ -499,7 +497,6 @@
     const infoMessage = document.getElementById('info-message');
     const formFields = document.getElementById('form-fields');
 
-    // Adjuntos
     const attachmentsWrap = document.getElementById('attachments-wrap');
     const dropzone = document.getElementById('dropzone');
     const pickImagesBtn = document.getElementById('pick-images');
@@ -509,29 +506,20 @@
     const attachmentsError = document.getElementById('attachments-error');
 
     const MAX_FILES = 3;
-    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const MAX_SIZE = 5 * 1024 * 1024;
     const ALLOWED = new Set(['image/png','image/jpeg','image/webp']);
-    let selectedFiles = []; // File[]
-    const previewUrls = new Map(); // key -> objectURL
+    let selectedFiles = [];
+    const previewUrls = new Map();
 
-    // URLs
     const WEBHOOK_URL = 'https://n8n.plai.mx/webhook/soporte-plai-prod';
     const DIRECTUS_URL = 'https://admin.plai.mx/items/Empleados';
-    const DIRECTUS_TOKEN = ''; // ← Agregar tu Bearer token aquí
+    const DIRECTUS_TOKEN = '';
 
-    // Estado
     let empleadoVerificado = false;
     let esPlantilla = false;
 
-    function openModal() {
-      modalOverlay.style.display = 'block';
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeModal() {
-      modalOverlay.style.display = 'none';
-      document.body.style.overflow = 'auto';
-    }
+    function openModal() { modalOverlay.style.display = 'block'; document.body.style.overflow = 'hidden'; }
+    function closeModal() { modalOverlay.style.display = 'none'; document.body.style.overflow = 'auto'; }
 
     function showMessage(message, type = 'info') {
       infoMessage.style.display = 'block';
@@ -539,20 +527,9 @@
       infoMessage.textContent = message;
     }
 
-    function hideMessage() {
-      infoMessage.style.display = 'none';
-    }
-
-    function setRequired(el, required) {
-      if (!el) return;
-      el.required = !!required;
-      if (!required) el.removeAttribute('required');
-    }
-
-    function setEnabled(el, enabled) {
-      if (!el) return;
-      el.disabled = !enabled;
-    }
+    function hideMessage() { infoMessage.style.display = 'none'; }
+    function setRequired(el, required) { if (!el) return; el.required = !!required; if (!required) el.removeAttribute('required'); }
+    function setEnabled(el, enabled) { if (!el) return; el.disabled = !enabled; }
 
     function resetAutoFields() {
       document.getElementById('nombre-completo').value = '';
@@ -569,63 +546,32 @@
     }
 
     function setModePlantilla() {
-      esPlantilla = true;
-      empleadoVerificado = false;
-
-      emailSection.style.display = 'block';
-      formFields.style.display = 'none';
+      esPlantilla = true; empleadoVerificado = false;
+      emailSection.style.display = 'block'; formFields.style.display = 'none';
       emailFieldNoPlantilla.style.display = 'none';
-
-      setEnabled(emailNoPlantilla, false);
-      setRequired(emailNoPlantilla, false);
-
-      setEnabled(emailInput, true);
-      setRequired(emailInput, true);
-
-      emailInput.value = '';
-      hideMessage();
+      setEnabled(emailNoPlantilla, false); setRequired(emailNoPlantilla, false);
+      setEnabled(emailInput, true); setRequired(emailInput, true);
+      emailInput.value = ''; hideMessage();
       showMessage('ℹ️ Ingresa tu correo y presiona "Verificar correo".', 'info');
-
       clearAttachments();
     }
 
     function setModeNoPlantilla() {
-      esPlantilla = false;
-      empleadoVerificado = false;
-
-      emailSection.style.display = 'none';
-      formFields.style.display = 'block';
+      esPlantilla = false; empleadoVerificado = false;
+      emailSection.style.display = 'none'; formFields.style.display = 'block';
       emailFieldNoPlantilla.style.display = 'block';
-
-      setEnabled(emailInput, false);
-      setRequired(emailInput, false);
-
-      setEnabled(emailNoPlantilla, true);
-      setRequired(emailNoPlantilla, true);
-
-      lockAutoFields(false);
-
-      emailInput.value = '';
-      emailNoPlantilla.value = '';
-      resetAutoFields();
-      document.getElementById('asunto').value = '';
-      document.getElementById('mensaje').value = '';
-      hideMessage();
-
-      clearAttachments();
+      setEnabled(emailInput, false); setRequired(emailInput, false);
+      setEnabled(emailNoPlantilla, true); setRequired(emailNoPlantilla, true);
+      lockAutoFields(false); emailInput.value = ''; emailNoPlantilla.value = '';
+      resetAutoFields(); document.getElementById('asunto').value = ''; document.getElementById('mensaje').value = '';
+      hideMessage(); clearAttachments();
     }
 
     async function verificarEmpleado(correo) {
       try {
-        verifyBtn.disabled = true;
-        verifyBtn.textContent = 'Verificando...';
-        hideMessage();
-
+        verifyBtn.disabled = true; verifyBtn.textContent = 'Verificando...'; hideMessage();
         const email = String(correo || '').trim().toLowerCase();
-        if (!email) {
-          showMessage('⚠️ Ingresa un correo.', 'error');
-          return;
-        }
+        if (!email) { showMessage('⚠️ Ingresa un correo.', 'error'); return; }
 
         const url = new URL(DIRECTUS_URL);
         url.searchParams.set('fields', 'nombre_completo,posicion,direccion_adscrita.nombre_de_direccion');
@@ -635,12 +581,7 @@
         const headers = { 'Accept': 'application/json' };
         if (DIRECTUS_TOKEN) headers['Authorization'] = `Bearer ${DIRECTUS_TOKEN}`;
 
-        const response = await fetch(url.toString(), {
-          method: 'GET',
-          headers: headers,
-          mode: 'cors'
-        });
-
+        const response = await fetch(url.toString(), { method: 'GET', headers, mode: 'cors' });
         if (response.status === 401 || response.status === 403) throw new Error('NO_AUTH');
         if (!response.ok) throw new Error(`DIRECTUS_HTTP_${response.status}`);
 
@@ -649,64 +590,34 @@
 
         if (!empleado) {
           showMessage('❌ No se encontró el correo en la plantilla. Verifica tu correo o selecciona "No".', 'error');
-          empleadoVerificado = false;
-          formFields.style.display = 'none';
-          return;
+          empleadoVerificado = false; formFields.style.display = 'none'; return;
         }
 
-        const nombreCompleto = String(empleado.nombre_completo || '').trim();
-
-        formFields.style.display = 'block';
-        emailFieldNoPlantilla.style.display = 'none';
-
-        document.getElementById('nombre-completo').value = nombreCompleto;
+        formFields.style.display = 'block'; emailFieldNoPlantilla.style.display = 'none';
+        document.getElementById('nombre-completo').value = String(empleado.nombre_completo || '').trim();
         document.getElementById('puesto').value = empleado.posicion || '';
         document.getElementById('area').value = empleado.direccion_adscrita?.nombre_de_direccion || '';
-
-        lockAutoFields(true);
-
-        empleadoVerificado = true;
+        lockAutoFields(true); empleadoVerificado = true;
         showMessage('✅ Empleado verificado. Completa asunto, mensaje y adjuntos (opcional).', 'info');
-
-        setTimeout(() => {
-          document.getElementById('asunto').focus();
-          document.getElementById('asunto').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 200);
-
+        setTimeout(() => { document.getElementById('asunto').focus(); document.getElementById('asunto').scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 200);
       } catch (error) {
         console.error('Error al verificar empleado:', error);
-
         if (error instanceof TypeError && String(error.message).toLowerCase().includes('fetch')) {
-          showMessage('❌ No se pudo consultar el directorio (bloqueo CORS o red). Revisa que Directus permita este dominio.', 'error');
+          showMessage('❌ No se pudo consultar el directorio (bloqueo CORS o red).', 'error');
         } else if (error.message === 'NO_AUTH') {
-          showMessage('❌ No autorizado para consultar el directorio. Inicia sesión en admin.plai.mx o habilita permisos públicos controlados.', 'error');
+          showMessage('❌ No autorizado para consultar el directorio.', 'error');
         } else {
           showMessage('❌ Error al verificar el empleado. Intenta nuevamente.', 'error');
         }
-
-        empleadoVerificado = false;
-        formFields.style.display = 'none';
+        empleadoVerificado = false; formFields.style.display = 'none';
       } finally {
-        verifyBtn.disabled = false;
-        verifyBtn.textContent = 'Verificar correo';
+        verifyBtn.disabled = false; verifyBtn.textContent = 'Verificar correo';
       }
     }
 
-    // =========================
-    // Adjuntos: helpers
-    // =========================
-    function showAttachmentsError(msg) {
-      attachmentsError.style.display = 'block';
-      attachmentsError.textContent = msg;
-    }
-    function hideAttachmentsError() {
-      attachmentsError.style.display = 'none';
-      attachmentsError.textContent = '';
-    }
-
-    function fileKey(f) {
-      return `${f.name}__${f.size}__${f.lastModified}`;
-    }
+    function showAttachmentsError(msg) { attachmentsError.style.display = 'block'; attachmentsError.textContent = msg; }
+    function hideAttachmentsError() { attachmentsError.style.display = 'none'; attachmentsError.textContent = ''; }
+    function fileKey(f) { return `${f.name}__${f.size}__${f.lastModified}`; }
 
     function validateFiles(files) {
       if (files.length > MAX_FILES) return `Máximo ${MAX_FILES} imágenes.`;
@@ -717,208 +628,77 @@
       return null;
     }
 
-    function revokeAllPreviews() {
-      for (const url of previewUrls.values()) {
-        try { URL.revokeObjectURL(url); } catch (_) {}
-      }
-      previewUrls.clear();
-    }
+    function revokeAllPreviews() { for (const url of previewUrls.values()) { try { URL.revokeObjectURL(url); } catch (_) {} } previewUrls.clear(); }
 
     function clearAttachments() {
-      selectedFiles = [];
-      imagenesInput.value = '';
-      attachmentsList.style.display = 'none';
-      attachmentsList.innerHTML = '';
-      hideAttachmentsError();
-      revokeAllPreviews();
+      selectedFiles = []; imagenesInput.value = '';
+      attachmentsList.style.display = 'none'; attachmentsList.innerHTML = '';
+      hideAttachmentsError(); revokeAllPreviews();
     }
 
     function addFiles(newFiles) {
       hideAttachmentsError();
       const incoming = [...(newFiles || [])].filter(Boolean);
       if (!incoming.length) return;
-
-      // Merge + dedupe
       const merged = [...selectedFiles, ...incoming];
-      const seen = new Set();
-      const deduped = [];
-      for (const f of merged) {
-        const k = fileKey(f);
-        if (seen.has(k)) continue;
-        seen.add(k);
-        deduped.push(f);
-      }
-
+      const seen = new Set(); const deduped = [];
+      for (const f of merged) { const k = fileKey(f); if (seen.has(k)) continue; seen.add(k); deduped.push(f); }
       const err = validateFiles(deduped);
-      if (err) {
-        showAttachmentsError(err);
-        return;
-      }
-
-      selectedFiles = deduped;
-      renderAttachments();
+      if (err) { showAttachmentsError(err); return; }
+      selectedFiles = deduped; renderAttachments();
     }
 
     function renderAttachments() {
-      // reset previews (evita memory leak)
       revokeAllPreviews();
-
-      if (!selectedFiles.length) {
-        attachmentsList.style.display = 'none';
-        attachmentsList.innerHTML = '';
-        return;
-      }
-
-      attachmentsList.style.display = 'grid';
-      attachmentsList.innerHTML = '';
-
+      if (!selectedFiles.length) { attachmentsList.style.display = 'none'; attachmentsList.innerHTML = ''; return; }
+      attachmentsList.style.display = 'grid'; attachmentsList.innerHTML = '';
       selectedFiles.forEach((file, idx) => {
-        const k = fileKey(file);
-        const url = URL.createObjectURL(file);
-        previewUrls.set(k, url);
-
-        const card = document.createElement('div');
-        card.className = 'thumb';
-        card.innerHTML = `
-          <img src="${url}" alt="captura" />
-          <div class="thumb-meta">
-            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;">
-              ${file.name}
-            </span>
-            <button type="button" class="remove-btn" data-idx="${idx}">Quitar</button>
-          </div>
-        `;
-
+        const k = fileKey(file); const url = URL.createObjectURL(file); previewUrls.set(k, url);
+        const card = document.createElement('div'); card.className = 'thumb';
+        card.innerHTML = `<img src="${url}" alt="captura" /><div class="thumb-meta"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;">${file.name}</span><button type="button" class="remove-btn" data-idx="${idx}">Quitar</button></div>`;
         attachmentsList.appendChild(card);
       });
-
       attachmentsList.querySelectorAll('.remove-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const i = Number(e.currentTarget.getAttribute('data-idx'));
-          selectedFiles.splice(i, 1);
-          renderAttachments();
-        });
+        btn.addEventListener('click', (e) => { const i = Number(e.currentTarget.getAttribute('data-idx')); selectedFiles.splice(i, 1); renderAttachments(); });
       });
     }
 
-    // =========================
-    // Adjuntos: select
-    // =========================
-    pickImagesBtn.addEventListener('click', () => {
-      hideAttachmentsError();
-      imagenesInput.click();
-    });
+    pickImagesBtn.addEventListener('click', () => { hideAttachmentsError(); imagenesInput.click(); });
+    clearImagesBtn.addEventListener('click', () => { clearAttachments(); });
+    dropzone.addEventListener('click', () => { hideAttachmentsError(); imagenesInput.click(); });
+    dropzone.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); imagenesInput.click(); } });
+    imagenesInput.addEventListener('change', () => { const files = [...(imagenesInput.files || [])]; imagenesInput.value = ''; addFiles(files); });
 
-    clearImagesBtn.addEventListener('click', () => {
-      clearAttachments();
-    });
-
-    // Click en dropzone = seleccionar
-    dropzone.addEventListener('click', () => {
-      hideAttachmentsError();
-      imagenesInput.click();
-    });
-
-    // Teclado (accesibilidad)
-    dropzone.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        imagenesInput.click();
-      }
-    });
-
-    // Change: acumular (NO reemplazar)
-    imagenesInput.addEventListener('change', () => {
-      const files = [...(imagenesInput.files || [])];
-      // reset input para permitir re-seleccionar el mismo archivo y dispare change
-      imagenesInput.value = '';
-      addFiles(files);
-    });
-
-    // =========================
-    // Adjuntos: drag & drop
-    // =========================
-    function isFileDrag(evt) {
-      const dt = evt.dataTransfer;
-      return dt && dt.types && [...dt.types].includes('Files');
-    }
-
-    ['dragenter','dragover'].forEach(evName => {
-      attachmentsWrap.addEventListener(evName, (e) => {
-        if (!isFileDrag(e)) return;
-        e.preventDefault();
-        e.stopPropagation();
-        attachmentsWrap.classList.add('dragover');
-      });
-    });
-
-    ['dragleave','drop'].forEach(evName => {
-      attachmentsWrap.addEventListener(evName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        attachmentsWrap.classList.remove('dragover');
-      });
-    });
-
-    attachmentsWrap.addEventListener('drop', (e) => {
-      if (!isFileDrag(e)) return;
-      const files = [...(e.dataTransfer.files || [])];
-      addFiles(files);
-    });
-
-    // Evita que el drop abra el archivo en el navegador
+    function isFileDrag(evt) { const dt = evt.dataTransfer; return dt && dt.types && [...dt.types].includes('Files'); }
+    ['dragenter','dragover'].forEach(evName => { attachmentsWrap.addEventListener(evName, (e) => { if (!isFileDrag(e)) return; e.preventDefault(); e.stopPropagation(); attachmentsWrap.classList.add('dragover'); }); });
+    ['dragleave','drop'].forEach(evName => { attachmentsWrap.addEventListener(evName, (e) => { e.preventDefault(); e.stopPropagation(); attachmentsWrap.classList.remove('dragover'); }); });
+    attachmentsWrap.addEventListener('drop', (e) => { if (!isFileDrag(e)) return; const files = [...(e.dataTransfer.files || [])]; addFiles(files); });
     window.addEventListener('dragover', (e) => e.preventDefault());
     window.addEventListener('drop', (e) => e.preventDefault());
 
-    // Eventos radio
     radioSi.addEventListener('change', (e) => { if (e.target.checked) setModePlantilla(); });
     radioNo.addEventListener('change', (e) => { if (e.target.checked) setModeNoPlantilla(); });
 
-    // Verificar
     verifyBtn.addEventListener('click', () => {
       const correo = emailInput.value.trim();
-      if (!correo) {
-        showMessage('⚠️ Por favor ingresa tu correo', 'error');
-        emailInput.focus();
-        return;
-      }
-      if (!emailInput.validity.valid) {
-        showMessage('⚠️ Ingresa un correo válido', 'error');
-        emailInput.focus();
-        return;
-      }
+      if (!correo) { showMessage('⚠️ Por favor ingresa tu correo', 'error'); emailInput.focus(); return; }
+      if (!emailInput.validity.valid) { showMessage('⚠️ Ingresa un correo válido', 'error'); emailInput.focus(); return; }
       verificarEmpleado(correo);
     });
 
-    // Modal close
     closeModalBtn.addEventListener('click', closeModal);
     modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalOverlay.style.display === 'block') closeModal(); });
 
-    // Submit
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-
-      if (esPlantilla && !empleadoVerificado) {
-        showMessage('⚠️ Verifica tu correo antes de enviar.', 'error');
-        return;
-      }
-
+      if (esPlantilla && !empleadoVerificado) { showMessage('⚠️ Verifica tu correo antes de enviar.', 'error'); return; }
       const correoFinal = esPlantilla ? emailInput.value.trim() : emailNoPlantilla.value.trim();
-      if (!correoFinal) {
-        showMessage('⚠️ Falta el correo.', 'error');
-        return;
-      }
-
-      // Validar adjuntos
+      if (!correoFinal) { showMessage('⚠️ Falta el correo.', 'error'); return; }
       hideAttachmentsError();
       const err = validateFiles(selectedFiles);
-      if (err) {
-        showAttachmentsError(err);
-        return;
-      }
+      if (err) { showAttachmentsError(err); return; }
 
-      // multipart/form-data
       const fd = new FormData();
       fd.append('nombre', document.getElementById('nombre-completo').value);
       fd.append('email', correoFinal);
@@ -927,138 +707,64 @@
       fd.append('asunto', document.getElementById('asunto').value);
       fd.append('mensaje', document.getElementById('mensaje').value);
       fd.append('es_plantilla', String(esPlantilla));
-
-      // Adjuntos: mismo nombre "imagenes" repetido -> llega como múltiples en n8n
-      selectedFiles.forEach((file) => {
-        fd.append('imagenes', file, file.name);
-      });
+      selectedFiles.forEach((file) => { fd.append('imagenes', file, file.name); });
 
       openModal();
-      modalBody.innerHTML = `
-        <div style="text-align:center; padding:40px 20px;">
-          <div style="font-size:60px; margin-bottom:20px;">🤖</div>
-          <div class="loading" style="font-size:1.4em; margin-bottom:15px; color:#64ffda; font-weight:600;">
-            Procesando ticket...
-          </div>
-          <div style="color:#8892b0;">Clasificando y asignando prioridad</div>
-          <div style="margin-top:30px;">
-            <div style="width:200px; height:4px; background:rgba(100,255,218,0.2); border-radius:2px; margin:0 auto; overflow:hidden;">
-              <div style="width:100%; height:100%; background:linear-gradient(90deg,#00d4ff,#7b2ff7); animation:loading 1.5s ease-in-out infinite;"></div>
-            </div>
-          </div>
-        </div>
-      `;
+      modalBody.innerHTML = `<div style="text-align:center; padding:40px 20px;"><div style="font-size:60px; margin-bottom:20px;">🤖</div><div class="loading" style="font-size:1.4em; margin-bottom:15px; color:#64ffda; font-weight:600;">Procesando ticket...</div><div style="color:#8892b0;">Clasificando y asignando prioridad</div><div style="margin-top:30px;"><div style="width:200px; height:4px; background:rgba(100,255,218,0.2); border-radius:2px; margin:0 auto; overflow:hidden;"><div style="width:100%; height:100%; background:linear-gradient(90deg,#00d4ff,#7b2ff7); animation:loading 1.5s ease-in-out infinite;"></div></div></div></div>`;
 
       const submitBtn = document.getElementById('submit-btn');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Procesando...';
+      submitBtn.disabled = true; submitBtn.textContent = 'Procesando...';
 
       try {
-        const res = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Accept': 'application/json' }, // NO Content-Type
-          body: fd,
-        });
-
+        const res = await fetch(WEBHOOK_URL, { method: 'POST', headers: { 'Accept': 'application/json' }, body: fd });
         if (!res.ok) throw new Error(`Error HTTP: ${res.status}`);
-
         const responseData = await res.json();
         const ticket = responseData?.json ?? responseData ?? {};
 
         const categoriaUI = ticket.categoria ?? ticket.categoria_ia ?? ticket.clasificacion?.categoria ?? 'General';
         const prioridadUI = ticket.prioridad ?? ticket.prioridad_ia ?? ticket.clasificacion?.prioridad ?? 'media';
         const estatusUI   = ticket.estatus   ?? ticket.estatus_ia   ?? ticket.clasificacion?.estatus   ?? 'en revisión';
-
-        const respuestaUI =
-          ticket.respuesta_usuario ??
-          ticket.clasificacion?.respuesta_usuario ??
-          ticket.message ??
-          '';
+        const respuestaUI = ticket.respuesta_usuario ?? ticket.clasificacion?.respuesta_usuario ?? ticket.message ?? '';
 
         modalBody.innerHTML = `
           <h2 style="color:#64ffda; font-size:1.8em; margin-bottom:25px; display:flex; align-items:center; gap:10px;">
             <span style="color:#00d4ff;">◆</span> ✅ Ticket Creado
           </h2>
-
           <div style="background:rgba(100,255,218,0.1); border-left:4px solid #64ffda; padding:20px; margin-bottom:25px; border-radius:8px;">
             <strong style="color:#64ffda; font-size:1.1em;">🎫 ID del Ticket:</strong>
-            <div style="font-family:monospace; background:rgba(0,0,0,0.4); padding:10px 15px; border-radius:6px; margin-top:10px; font-size:1.2em; color:#00d4ff;">
-              ${ticket.id_ticket || 'Generando...'}
-            </div>
+            <div style="font-family:monospace; background:rgba(0,0,0,0.4); padding:10px 15px; border-radius:6px; margin-top:10px; font-size:1.2em; color:#00d4ff;">${ticket.id_ticket || 'Generando...'}</div>
           </div>
-
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:20px; margin-bottom:25px;">
-            <div style="background:rgba(0,212,255,0.1); padding:15px; border-radius:8px; border:1px solid rgba(0,212,255,0.3);">
-              <div style="font-size:0.85em; color:#8892b0; text-transform:uppercase; margin-bottom:5px;">Categoría</div>
-              <div style="font-size:1.2em; color:#00d4ff; font-weight:600;">${categoriaUI}</div>
-            </div>
-
+            <div style="background:rgba(0,212,255,0.1); padding:15px; border-radius:8px; border:1px solid rgba(0,212,255,0.3);"><div style="font-size:0.85em; color:#8892b0; text-transform:uppercase; margin-bottom:5px;">Categoría</div><div style="font-size:1.2em; color:#00d4ff; font-weight:600;">${categoriaUI}</div></div>
             <div style="background:${prioridadUI === 'alta' ? 'rgba(255,71,87,0.1)' : prioridadUI === 'media' ? 'rgba(255,165,2,0.1)' : 'rgba(46,213,115,0.1)'}; padding:15px; border-radius:8px; border:1px solid ${prioridadUI === 'alta' ? 'rgba(255,71,87,0.3)' : prioridadUI === 'media' ? 'rgba(255,165,2,0.3)' : 'rgba(46,213,115,0.3)'};">
               <div style="font-size:0.85em; color:#8892b0; text-transform:uppercase; margin-bottom:5px;">Prioridad</div>
-              <div style="font-size:1.2em; color:${prioridadUI === 'alta' ? '#ff4757' : prioridadUI === 'media' ? '#ffa502' : '#2ed573'}; font-weight:600; text-transform:uppercase;">
-                ${prioridadUI}
-              </div>
+              <div style="font-size:1.2em; color:${prioridadUI === 'alta' ? '#ff4757' : prioridadUI === 'media' ? '#ffa502' : '#2ed573'}; font-weight:600; text-transform:uppercase;">${prioridadUI}</div>
             </div>
-
-            <div style="background:rgba(100,255,218,0.1); padding:15px; border-radius:8px; border:1px solid rgba(100,255,218,0.3);">
-              <div style="font-size:0.85em; color:#8892b0; text-transform:uppercase; margin-bottom:5px;">Estatus</div>
-              <div style="font-size:1.2em; color:#64ffda; font-weight:600;">${estatusUI}</div>
-            </div>
+            <div style="background:rgba(100,255,218,0.1); padding:15px; border-radius:8px; border:1px solid rgba(100,255,218,0.3);"><div style="font-size:0.85em; color:#8892b0; text-transform:uppercase; margin-bottom:5px;">Estatus</div><div style="font-size:1.2em; color:#64ffda; font-weight:600;">${estatusUI}</div></div>
           </div>
-
           <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(100,255,218,0.2); border-radius:8px; padding:25px; margin-bottom:25px;">
             <h3 style="color:#64ffda; font-size:1.2em; margin-bottom:15px;">💬 Respuesta</h3>
-            <div style="color:#e0e0e0; line-height:1.8;">
-              ${respuestaUI ? String(respuestaUI).replace(/\n/g, '<br>') : '✅ Ticket procesado.'}
-            </div>
+            <div style="color:#e0e0e0; line-height:1.8;">${respuestaUI ? String(respuestaUI).replace(/\n/g, '<br>') : '✅ Ticket procesado.'}</div>
           </div>
-
-          <button onclick="document.getElementById('close-modal').click()" style="width:100%; padding:16px; background:linear-gradient(135deg,#00d4ff 0%, #7b2ff7 100%); border:none; border-radius:8px; color:white; font-size:1.1em; font-weight:600; cursor:pointer;">
-            Cerrar
-          </button>
+          <button onclick="document.getElementById('close-modal').click()" style="width:100%; padding:16px; background:linear-gradient(135deg,#00d4ff 0%, #7b2ff7 100%); border:none; border-radius:8px; color:white; font-size:1.1em; font-weight:600; cursor:pointer;">Cerrar</button>
         `;
 
-        // Reset UI
-        form.reset();
-        empleadoVerificado = false;
-        esPlantilla = false;
-        radioSi.checked = false;
-        radioNo.checked = false;
-        emailSection.style.display = 'none';
-        formFields.style.display = 'none';
-        hideMessage();
-
-        clearAttachments();
-
-        setEnabled(emailInput, true);
-        setEnabled(emailNoPlantilla, true);
+        form.reset(); empleadoVerificado = false; esPlantilla = false;
+        radioSi.checked = false; radioNo.checked = false;
+        emailSection.style.display = 'none'; formFields.style.display = 'none';
+        hideMessage(); clearAttachments();
+        setEnabled(emailInput, true); setEnabled(emailNoPlantilla, true);
 
       } catch (err2) {
         console.error('Error completo:', err2);
-        modalBody.innerHTML = `
-          <div style="text-align:center; padding:40px 20px;">
-            <div style="font-size:60px; margin-bottom:20px;">❌</div>
-            <h2 style="color:#ff4757; font-size:1.8em; margin-bottom:15px;">Error al crear el ticket</h2>
-            <div style="background:rgba(255,71,87,0.1); border-left:4px solid #ff4757; padding:20px; border-radius:8px; text-align:left;">
-              <div style="color:#ff4757; font-weight:bold; margin-bottom:10px;">No se pudo procesar</div>
-              <div style="color:#e0e0e0;">Intenta nuevamente.</div>
-              <div style="font-size:0.85em; color:#8892b0; margin-top:15px; font-family:monospace;">
-                Detalle: ${err2.message}
-              </div>
-            </div>
-          </div>
-        `;
+        modalBody.innerHTML = `<div style="text-align:center; padding:40px 20px;"><div style="font-size:60px; margin-bottom:20px;">❌</div><h2 style="color:#ff4757; font-size:1.8em; margin-bottom:15px;">Error al crear el ticket</h2><div style="background:rgba(255,71,87,0.1); border-left:4px solid #ff4757; padding:20px; border-radius:8px; text-align:left;"><div style="color:#ff4757; font-weight:bold; margin-bottom:10px;">No se pudo procesar</div><div style="color:#e0e0e0;">Intenta nuevamente.</div><div style="font-size:0.85em; color:#8892b0; margin-top:15px; font-family:monospace;">Detalle: ${err2.message}</div></div></div>`;
       } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Enviar';
+        submitBtn.disabled = false; submitBtn.textContent = 'Enviar';
       }
     });
 
-    // Estado inicial
-    setEnabled(emailInput, false);
-    setEnabled(emailNoPlantilla, false);
-    setRequired(emailInput, false);
-    setRequired(emailNoPlantilla, false);
+    setEnabled(emailInput, false); setEnabled(emailNoPlantilla, false);
+    setRequired(emailInput, false); setRequired(emailNoPlantilla, false);
   </script>
 </body>
 </html>
