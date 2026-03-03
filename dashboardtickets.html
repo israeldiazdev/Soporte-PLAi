@@ -58,13 +58,6 @@
 
     h1::before { content: '📊'; font-size: 0.9em; }
 
-    .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
     .btn-logout {
       padding: 7px 14px;
       border-radius: 8px;
@@ -540,8 +533,8 @@
 
 <body>
   <header>
-    <div class="header-top">
-      <h1>Tickets PLAi</h1>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+      <h1 style="margin-bottom:0;">Tickets PLAi</h1>
       <button class="btn-logout" onclick="window._logout()">Salir</button>
     </div>
 
