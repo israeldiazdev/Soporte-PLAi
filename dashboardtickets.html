@@ -733,11 +733,17 @@
     // ===========================
     // LOAD USER PROFILE
     // ===========================
-    const _name  = sessionStorage.getItem('kc_name')  || 'Admin';
-    const _email = sessionStorage.getItem('kc_email') || '';
+    (function() {
+      const _name  = sessionStorage.getItem('kc_name')  || '';
+      const _email = sessionStorage.getItem('kc_email') || '';
+      const displayName = _name.trim() && _name !== _email ? _name : _email;
 
-    document.getElementById('userName').textContent    = _name;
-    document.getElementById('avatarInit').textContent  = (_name[0] || '?').toUpperCase();
+      const userNameEl = document.getElementById('userName');
+      const avatarEl = document.getElementById('avatarInit');
+
+      if (userNameEl) userNameEl.textContent = displayName || 'Admin';
+      if (avatarEl) avatarEl.textContent = ((displayName || 'A')[0] || '?').toUpperCase();
+    })();
 
     // ===========================
     // CONFIG
