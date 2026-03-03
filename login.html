@@ -24,7 +24,8 @@
     .card{position:relative;z-index:10;width:min(420px,92vw);background:rgba(12,16,32,0.85);border:1px solid var(--border);border-radius:20px;padding:48px 40px;backdrop-filter:blur(24px);box-shadow:0 0 0 1px rgba(0,212,255,0.05),0 40px 80px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,255,255,0.05);animation:cardIn .6s cubic-bezier(.22,1,.36,1) both;}
     @keyframes cardIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
     .card::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);}
-    .brand{display:flex;align-items:center;gap:12px;margin-bottom:36px;}
+    .brand{display:flex;justify-content:center;margin-bottom:36px;}
+    .brand img{max-height:80px;object-fit:contain;}
     .brand-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3em;box-shadow:0 0 20px rgba(0,212,255,0.35);}
     .brand-name{font-family:var(--font-head);font-weight:800;font-size:1.5em;letter-spacing:-0.5px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
     .brand-sub{font-size:.75em;color:var(--muted);letter-spacing:2px;text-transform:uppercase;font-weight:500;}
@@ -53,11 +54,7 @@
 
 <div class="card">
   <div class="brand">
-    <div class="brand-icon">📊</div>
-    <div>
-      <div class="brand-name">PLAi</div>
-      <div class="brand-sub">Soporte Inteligente</div>
-    </div>
+    <img src="Imagenes/LOGO PLAi 1.png" alt="PLAi Logo" />
   </div>
   <h1>Bienvenido de vuelta</h1>
   <p>Accede a tu portal de tickets con tu cuenta institucional de PLAi.</p>
