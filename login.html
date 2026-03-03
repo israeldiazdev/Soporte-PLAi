@@ -14,7 +14,7 @@
       --font-head: 'Syne', sans-serif; --font-body: 'DM Sans', sans-serif;
     }
     html, body { height: 100%; }
-    body { font-family: var(--font-body); background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; position: relative; }
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; position: relative; }
     .bg-grid { position:fixed;inset:0;z-index:0; background-image:linear-gradient(rgba(0,212,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.04) 1px,transparent 1px); background-size:60px 60px; animation:gridMove 20s linear infinite; }
     @keyframes gridMove{0%{background-position:0 0}100%{background-position:60px 60px}}
     .orb{position:fixed;border-radius:50%;filter:blur(80px);z-index:0;pointer-events:none;animation:orbFloat 8s ease-in-out infinite;}
@@ -43,6 +43,7 @@
     .shield{color:var(--accent);font-size:1.1em;flex-shrink:0;}
     .card-footer{margin-top:32px;text-align:center;font-size:.78em;color:var(--muted);}
     .card-footer a{color:var(--accent);text-decoration:none;}
+    footer{text-align:center;padding:24px 20px;color:rgba(255,255,255,0.25);font-size:0.82em;position:relative;z-index:1;margin-top:auto;width:100%;}
     .toast{position:fixed;top:24px;right:24px;z-index:999;padding:14px 20px;background:rgba(255,71,87,0.15);border:1px solid rgba(255,71,87,0.4);border-radius:10px;color:#ff4757;font-size:.9em;font-weight:600;display:none;}
   </style>
 </head>
@@ -224,5 +225,9 @@
     }
   })();
 </script>
+
+<footer>
+  ©️ 2026 PLAi. Todos los derechos reservados.
+</footer>
 </body>
 </html>
