@@ -58,6 +58,30 @@
 
     h1::before { content: '📊'; font-size: 0.9em; }
 
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .btn-logout {
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 71, 87, 0.3);
+      background: rgba(255, 71, 87, 0.08);
+      color: #ff6b7a;
+      font-size: .82em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .btn-logout:hover {
+      background: rgba(255, 71, 87, 0.15);
+      border-color: rgba(255, 71, 87, 0.5);
+    }
+
     .filters-header {
       display: flex;
       justify-content: space-between;
@@ -516,7 +540,10 @@
 
 <body>
   <header>
-    <h1>Tickets PLAi</h1>
+    <div class="header-top">
+      <h1>Tickets PLAi</h1>
+      <button class="btn-logout" onclick="window._logout()">Salir</button>
+    </div>
 
     <div class="filters-header">
       <div class="filters-title">🔍 Filtros</div>
@@ -686,6 +713,18 @@
   </div>
 
   <script>
+    // ===========================
+    // AUTH & LOGOUT
+    // ===========================
+    const _KC = { url: 'https://auth.plai.mx', realm: 'PLAI', clientId: 'dev_tickets' };
+
+    window._logout = function() {
+      sessionStorage.clear();
+      location.href = _KC.url + '/realms/' + _KC.realm + '/protocol/openid-connect/logout'
+        + '?client_id=' + _KC.clientId
+        + '&post_logout_redirect_uri=' + encodeURIComponent(location.origin + '/login.html');
+    };
+
     // ===========================
     // CONFIG
     // ===========================
