@@ -530,6 +530,69 @@
       location.href = url.toString();
     }
 
+    // Handle Keycloak callback
+    async function handleKeycloakCallback() {
+      const params = new URLSearchParams(location.search);
+      const code   = params.get('code');
+      const state  = params.get('state');
+      
+      if (!code) return false;
+
+      if (state !== sessionStorage.getItem('kc_state')) {
+        console.error('Estado inválido. Intenta de nuevo.');
+        return true;
+      }
+
+      // Limpiar URL
+      history.replaceState({}, '', location.pathname);
+
+      try {
+        const res = await fetch(`${KC_CONFIG.url}/realms/${KC_CONFIG.realm}/protocol/openid-connect/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type:    'authorization_code',
+            client_id:     KC_CONFIG.clientId,
+            code,
+            redirect_uri:  location.origin + location.pathname,
+            code_verifier: sessionStorage.getItem('kc_verifier'),
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error_description || data.error || 'Token error');
+
+        // Guardar tokens
+        sessionStorage.setItem('kc_access_token',  data.access_token);
+        sessionStorage.setItem('kc_refresh_token', data.refresh_token || '');
+        sessionStorage.setItem('kc_id_token',      data.id_token || '');
+
+        // Decodificar payload del access token
+        const payload = JSON.parse(atob(data.access_token.split('.')[1]));
+
+        // Extraer email y nombre
+        const email = payload?.email || payload?.preferred_username || '';
+        const name  = payload?.name  || payload?.given_name || email;
+
+        // Extraer todos los roles (client + realm)
+        const clientRoles = payload?.resource_access?.[KC_CONFIG.clientId]?.roles || [];
+        const realmRoles  = payload?.realm_access?.roles || [];
+        const allRoles    = [...new Set([...clientRoles, ...realmRoles])];
+
+        sessionStorage.setItem('kc_email', email);
+        sessionStorage.setItem('kc_name',  name);
+        sessionStorage.setItem('kc_roles', JSON.stringify(allRoles));
+
+        // Redirigir según rol
+        location.href = kc_checkIsAdmin(payload) ? KC_REDIRECT.admin : KC_REDIRECT.user;
+        return true;
+
+      } catch(e) {
+        console.error('Error de autenticación:', e.message);
+        return true;
+      }
+    }
+
     // ─────────────────────────────────────────
     // TICKET SUPPORT FORM
     // ─────────────────────────────────────────
@@ -819,6 +882,13 @@
 
     setEnabled(emailInput, false); setEnabled(emailNoPlantilla, false);
     setRequired(emailInput, false); setRequired(emailNoPlantilla, false);
+
+    // ─────────────────────────────────────────
+    // Initialize Keycloak callback handling
+    // ─────────────────────────────────────────
+    (async () => {
+      await handleKeycloakCallback();
+    })();
   </script>
 </body>
 </html>

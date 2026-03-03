@@ -2,7 +2,19 @@
 
 ## Resumen de Cambios
 
-Se ha implementado la integración de Keycloak SSO en el botón "Ver mis tickets" del formulario de soporte (index.html), replicando exactamente el mismo flujo de autenticación que usa la página de login.
+Se ha implementado la integración completa de Keycloak SSO en el botón "Ver mis tickets" del formulario de soporte (index.html), incluyendo tanto la redirección inicial como el manejo del callback de autorización.
+
+## Problema Solucionado
+
+**Situación Anterior:** El botón redirigía a Keycloak correctamente, pero al autenticarse, Keycloak devolvía el código de autorización a index.html sin procesarlo, quedando atrapado en un loop.
+
+**Solución:** Se agregó la lógica completa de procesamiento de callback que:
+1. Intercepta el código de autorización en la URL
+2. Intercambia el código por tokens JWT
+3. Extrae roles y datos del usuario
+4. Redirige al dashboard apropiado (admin o user)
+
+## Qué se Cambió
 
 ## Qué se Cambió
 
@@ -45,11 +57,105 @@ function kc_checkIsAdmin(payload) { ... }
 
 // Start Keycloak login flow
 async function startKeycloakLogin() { ... }
+
+// Handle Keycloak callback
+async function handleKeycloakCallback() { ... }
 ```
 
-## Arquitectura de Autenticación
+### 3. **index.html - Inicialización del Callback Handler**
 
-### Flujo PKCE (Proof Key for Code Exchange)
+Al final del script se agregó:
+
+```javascript
+// Initialize Keycloak callback handling
+(async () => {
+  await handleKeycloakCallback();
+})();
+```
+
+### 🔄 Flujo Completo de Autenticación desde Index
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 1. Usuario en Index.html                                        │
+│    Click en "Ver mis tickets"                                   │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ 2. startKeycloakLogin() ejecuta:                                 │
+│    - Genera verifier aleatorio (PKCE)                           │
+│    - Genera state (CSRF token)                                  │
+│    - Calcula challenge = SHA-256(verifier)                      │
+│    - Guarda verifier y state en sessionStorage                  │
+│    - Redirige a Keycloak con parámetros                         │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ 3. Keycloak (servidor de autenticación)                         │
+│    - Muestra formulario de login                                │
+│    - Usuario ingresa credenciales                               │
+│    - Valida identidad                                           │
+│    - Genera authorization code                                  │
+│    - Redirige a: index.html?code=XXX&state=YYY                  │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ 4. handleKeycloakCallback() en Index:                            │
+│    - Lee code y state de la URL                                 │
+│    - Valida state === sessionStorage.kc_state                   │
+│    - Limpia URL (history.replaceState)                          │
+│    - POST /token con:                                           │
+│      • code                                                     │
+│      • code_verifier (PKCE)                                     │
+│      • client_id                                                │
+│      • client_secret (solo en servidor)                         │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ 5. Keycloak Response (tokens JWT)                               │
+│    - access_token: JWT con datos del usuario                    │
+│    - refresh_token: Para renovar sesión                         │
+│    - id_token: Información de identidad                         │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ 6. Index.html procesa tokens:                                   │
+│    - Decodifica access_token (JWT)                              │
+│    - Extrae:                                                    │
+│      • email                                                    │
+│      • name                                                     │
+│      • realm_access.roles                                       │
+│      • resource_access.[clientId].roles                         │
+│    - Guarda en sessionStorage:                                  │
+│      • kc_access_token                                          │
+│      • kc_refresh_token                                         │
+│      • kc_id_token                                              │
+│      • kc_email                                                 │
+│      • kc_name                                                  │
+│      • kc_roles                                                 │
+│    - Verifica con kc_checkIsAdmin()                             │
+└────────────────────┬────────────────────────────────────────────┘
+                     │
+        ┌────────────┴────────────┐
+        │                         │
+        ▼                         ▼
+   ┌─────────────┐          ┌──────────────┐
+   │ Es Admin?   │          │ Es User?     │
+   │   YES       │          │   NO         │
+   └──────┬──────┘          └──────┬───────┘
+          │                        │
+          ▼                        ▼
+   ┌──────────────────┐    ┌─────────────────────┐
+   │ dashboardtickets │    │   mis-tickets.html  │
+   │     .html        │    │   (User Dashboard)  │
+   │  (Admin Panel)   │    └─────────────────────┘
+   └──────────────────┘
+```
 
 1. **Usuario clickea "Ver mis tickets"** en index.html
 2. **Función `startKeycloakLogin()`** genera:
@@ -104,10 +210,31 @@ const KC_REDIRECT = {
   3. Guarda verifier y state en sessionStorage
   4. Redirige a la URL de autorización de Keycloak
 
+### `handleKeycloakCallback()`
+- **Propósito:** Procesar el código de autorización devuelto por Keycloak
+- **Parámetros:** Ninguno (lee de `location.search`)
+- **Retorna:** `boolean` - true si hay callback, false si no
+- **Acciones:**
+  1. Valida el parámetro `state` para prevenir CSRF
+  2. Limpia la URL (reemplaza el history)
+  3. Intercambia el código por tokens JWT en el servidor Keycloak
+  4. Decodifica y extrae datos del JWT:
+     - Email
+     - Nombre
+     - Roles
+  5. Guarda tokens y datos en sessionStorage
+  6. Verifica el rol del usuario
+  7. Redirige al dashboard apropiado:
+     - Admin → `dashboardtickets.html`
+     - User → `mis-tickets.html`
+
 ### `kc_checkIsAdmin(payload)`
 - **Propósito:** Verificar si el usuario tiene rol de administrador
 - **Parámetros:** `payload` - JWT decodificado del usuario
 - **Retorna:** `boolean` - true si es admin, false si no
+- **Lógica:** Busca el rol 'admin' en:
+  - `resource_access.[clientId].roles` (client roles)
+  - `realm_access.roles` (realm roles)
 
 ### `kc_b64url(buf)`, `kc_sha256(plain)`, `kc_rnd(n)`
 - **Propósito:** Funciones utilitarias para PKCE
