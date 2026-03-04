@@ -887,6 +887,23 @@
     // Initialize Keycloak callback handling
     // ─────────────────────────────────────────
     (async () => {
+      // Check if session is valid
+      const token = sessionStorage.getItem('kc_access_token');
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          // Si el token es válido, redirigir al dashboard
+          if (payload.exp * 1000 > Date.now()) {
+            const isAdmin = kc_checkIsAdmin(payload);
+            location.href = isAdmin ? KC_REDIRECT.admin : KC_REDIRECT.user;
+            return;
+          }
+        } catch (e) {
+          // Token inválido, continuar
+        }
+      }
+      
+      // Procesar callback de Keycloak (después de login)
       await handleKeycloakCallback();
     })();
   </script>
