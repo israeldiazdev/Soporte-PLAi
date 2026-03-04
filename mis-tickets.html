@@ -12,7 +12,7 @@
       --accent: #00d4ff; --accent2: #7b2ff7; --text: #e8eaf0; --muted: #5a6080;
       --font-head: 'Syne', sans-serif; --font-body: 'DM Sans', sans-serif;
     }
-    body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; display:flex; flex-direction:column; }
+    body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; display:flex; flex-direction:column; overflow-x: hidden; position: relative; }
     body::before { content:''; position:fixed; inset:0; z-index:0; pointer-events:none; background: radial-gradient(ellipse 60% 50% at 10% 20%,rgba(0,212,255,0.07),transparent), radial-gradient(ellipse 50% 60% at 90% 80%,rgba(123,47,247,0.08),transparent); }
 
     header { position:sticky;top:0;z-index:50; background:rgba(5,8,16,0.85); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); padding:0 24px; }
@@ -84,7 +84,8 @@
     .open-link { padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text);text-decoration:none;font-size:.85em;font-weight:600;transition:all .2s; }
     .open-link:hover { border-color:var(--accent); }
 
-    @media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}.user-name{display:none}}
+    @media(max-width:1050px){.kpis{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:560px){.page-title{font-size:1.5em}.kpis{grid-template-columns:1fr}.table-wrap{font-size:0.85em}.user-name{display:none}table th,table td{padding:12px 8px}}
   </style>
 </head>
 <body>
