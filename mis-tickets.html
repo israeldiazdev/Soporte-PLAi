@@ -113,7 +113,20 @@
 
   window._logout = function() {
     sessionStorage.clear();
-    location.href = location.origin + '/index.html';
+    
+    // Hacer logout en Keycloak de forma invisible usando un iframe
+    const logoutUrl = _KC.url + '/realms/' + _KC.realm + '/protocol/openid-connect/logout'
+      + '?client_id=' + _KC.clientId;
+    
+    const iframe = document.createElement('iframe');
+    iframe.src = logoutUrl;
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    
+    // Esperar a que se complete el logout en Keycloak y luego redirigir
+    setTimeout(() => {
+      location.href = location.origin + '/index.html';
+    }, 500);
   };
 </script>
 
